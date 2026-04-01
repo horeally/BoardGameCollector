@@ -1,4 +1,4 @@
-import { Button, Popconfirm, Space, Table, Tag, Typography, message } from 'antd';
+import { Button, Popconfirm, Table, Tag, Typography, message } from 'antd';
 import { UndoOutlined } from '@ant-design/icons';
 import { useGameStore } from '../store/gameStore';
 import { CURRENCY_SYMBOLS } from '../types';

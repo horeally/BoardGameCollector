@@ -96,7 +96,6 @@ export async function getBGGDetail(id: number): Promise<BGGGameDetail | null> {
   const getLinkIds = (type: string) =>
     links.filter((l: any) => l['@_type'] === type).map((l: any) => Number(l['@_id']));
 
-  const categories = getLinks('boardgamecategory');
   const designers = getLinks('boardgamedesigner');
   const artists = getLinks('boardgameartist');
   const publishers = getLinks('boardgamepublisher');
