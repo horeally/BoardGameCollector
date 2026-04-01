@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/bgg-api/:path*", "destination": "/api/bgg?path=:path*" },
+    { "source": "/((?!api|assets|ks-badge).*)", "destination": "/index.html" }
+  ]
+}
