@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(npx tsc:*)",
-      "WebFetch(domain:github.com)",
-      "Bash(curl -s -w \"\\\\n%{http_code}\" \"https://boardgamegeek.com/xmlapi2/search?query=catan&type=boardgame\" -H \"Authorization: 17a7f543\")"
-    ]
-  }
-}
