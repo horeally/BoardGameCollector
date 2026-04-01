@@ -1,11 +1,12 @@
 import { useEffect, useReducer, useState } from 'react';
 import { createBrowserRouter, RouterProvider, Link, Navigate, useLocation, Outlet } from 'react-router-dom';
-import { Button, ConfigProvider, Layout, Menu, Spin, message } from 'antd';
+import { Button, ConfigProvider, Form, Input, Layout, Menu, Modal, Spin, message } from 'antd';
 import {
   AppstoreOutlined,
   BarChartOutlined,
   DollarOutlined,
   ExportOutlined,
+  LockOutlined,
   LogoutOutlined,
   PieChartOutlined,
   PlusOutlined,
@@ -156,6 +157,26 @@ export default function App() {
     message.success(`Refreshed ${updated} / ${gamesWithBgg.length} games`);
   };
 
+  const [pwModalOpen, setPwModalOpen] = useState(false);
+  const [pwLoading, setPwLoading] = useState(false);
+  const [pwForm] = Form.useForm();
+
+  const handleChangePassword = async () => {
+    try {
+      const values = await pwForm.validateFields();
+      setPwLoading(true);
+      const { error } = await supabase.auth.updateUser({ password: values.newPassword });
+      if (error) throw error;
+      message.success('Password updated');
+      setPwModalOpen(false);
+      pwForm.resetFields();
+    } catch (err: any) {
+      message.error(err.message || 'Failed to update password');
+    } finally {
+      setPwLoading(false);
+    }
+  };
+
   const handleExport = () => {
     exportGames(state.games);
     message.success('Exported successfully');
@@ -183,8 +204,39 @@ export default function App() {
         <div style={{ position: 'fixed', top: 12, right: 24, zIndex: 1000, display: 'flex', gap: 8 }}>
           <Button icon={<ReloadOutlined />} size="small" loading={refreshingAll} onClick={handleRefreshAll}>Refresh BGG</Button>
           <Button icon={<ExportOutlined />} size="small" onClick={handleExport}>Export</Button>
+          <Button icon={<LockOutlined />} size="small" onClick={() => setPwModalOpen(true)}>Password</Button>
           <Button icon={<LogoutOutlined />} size="small" onClick={handleLogout}>Logout</Button>
         </div>
+        <Modal
+          title="Change Password"
+          open={pwModalOpen}
+          onOk={handleChangePassword}
+          onCancel={() => { setPwModalOpen(false); pwForm.resetFields(); }}
+          okText="Update"
+          confirmLoading={pwLoading}
+        >
+          <Form form={pwForm} layout="vertical">
+            <Form.Item name="newPassword" label="New Password" rules={[{ required: true, min: 6, message: 'Min 6 characters' }]}>
+              <Input.Password placeholder="New password" />
+            </Form.Item>
+            <Form.Item
+              name="confirmPassword"
+              label="Confirm Password"
+              dependencies={['newPassword']}
+              rules={[
+                { required: true, message: 'Please confirm your password' },
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    if (!value || getFieldValue('newPassword') === value) return Promise.resolve();
+                    return Promise.reject(new Error('Passwords do not match'));
+                  },
+                }),
+              ]}
+            >
+              <Input.Password placeholder="Confirm new password" />
+            </Form.Item>
+          </Form>
+        </Modal>
         <RouterProvider router={router} />
       </GameContext.Provider>
     </ConfigProvider>

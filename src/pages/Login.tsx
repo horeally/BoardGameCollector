@@ -102,6 +102,21 @@ export default function Login({ onSuccess }: LoginProps) {
           <Form.Item name="password" rules={[{ required: true, min: 6, message: 'Min 6 characters' }]}>
             <Input.Password prefix={<LockOutlined />} placeholder="Password" size="large" />
           </Form.Item>
+          <Form.Item
+            name="confirmPassword"
+            dependencies={['password']}
+            rules={[
+              { required: true, message: 'Please confirm your password' },
+              ({ getFieldValue }) => ({
+                validator(_, value) {
+                  if (!value || getFieldValue('password') === value) return Promise.resolve();
+                  return Promise.reject(new Error('Passwords do not match'));
+                },
+              }),
+            ]}
+          >
+            <Input.Password prefix={<LockOutlined />} placeholder="Confirm Password" size="large" />
+          </Form.Item>
           <Form.Item>
             <Button type="primary" htmlType="submit" size="large" block loading={loading}>
               Register
