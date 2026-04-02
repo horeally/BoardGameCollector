@@ -218,27 +218,41 @@ export async function upsertExpansions(
   userId: string,
   baseGameId: string,
 ): Promise<void> {
-  const rows = expansions.map((e) => ({
-    user_id: userId,
-    base_game_id: baseGameId,
-    bgg_id: e.bggId,
-    name: e.name,
-    image: e.image || null,
-    owned: e.owned || false,
-    price: e.price || null,
-    currency: e.currency || 'CNY',
-    purchase_date: e.purchaseDate || null,
-    bgg_rating: e.bggRating || null,
-    bgg_bayes_rating: e.bggBayesRating || null,
-    bgg_rank: e.bggRank || null,
-    weight: e.weight || null,
-    designer: e.designer || null,
-    year_published: e.yearPublished || null,
-  }));
+  // Find which bgg_ids already exist to avoid duplicates
+  const { data: existing } = await supabase
+    .from('owned_expansions')
+    .select('bgg_id')
+    .eq('user_id', userId)
+    .eq('base_game_id', baseGameId);
+
+  const existingBggIds = new Set((existing || []).map((r: any) => r.bgg_id));
+
+  const newRows = expansions
+    .filter((e) => !existingBggIds.has(e.bggId))
+    .map((e) => ({
+      user_id: userId,
+      base_game_id: baseGameId,
+      bgg_id: e.bggId,
+      name: e.name,
+      image: e.image || null,
+      owned: e.owned || false,
+      item_type: 'expansion',
+      price: e.price || null,
+      currency: e.currency || 'CNY',
+      purchase_date: e.purchaseDate || null,
+      bgg_rating: e.bggRating || null,
+      bgg_bayes_rating: e.bggBayesRating || null,
+      bgg_rank: e.bggRank || null,
+      weight: e.weight || null,
+      designer: e.designer || null,
+      year_published: e.yearPublished || null,
+    }));
+
+  if (newRows.length === 0) return;
 
   const { error } = await supabase
     .from('owned_expansions')
-    .upsert(rows, { onConflict: 'user_id,base_game_id,bgg_id' });
+    .insert(newRows);
 
   if (error) throw error;
 }
