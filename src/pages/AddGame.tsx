@@ -304,6 +304,7 @@ export default function AddGame() {
                 options={[
                   { label: 'Base Game', value: 'base' },
                   { label: 'Expansion', value: 'expansion' },
+                  { label: 'Accessory', value: 'accessory' },
                 ]}
               />
             </Form.Item>

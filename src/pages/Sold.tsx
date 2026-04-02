@@ -204,11 +204,12 @@ export default function Sold() {
       dataIndex: 'gameType',
       key: 'gameType',
       width: 90,
-      render: (v: string) => (
-        <Tag color={v === 'expansion' ? 'orange' : 'blue'}>
-          {v === 'expansion' ? 'Expansion' : 'Base'}
-        </Tag>
-      ),
+      render: (v: string) => {
+        const conf = v === 'expansion' ? { color: 'orange', label: 'Expansion' }
+          : v === 'accessory' ? { color: 'purple', label: 'Accessory' }
+          : { color: 'blue', label: 'Base' };
+        return <Tag color={conf.color}>{conf.label}</Tag>;
+      },
     },
     {
       title: 'Notes',

@@ -6,7 +6,7 @@ export interface BoardGame {
   currency: string;
   purchaseDate: string;
   category: string;
-  gameType: 'base' | 'expansion';
+  gameType: 'base' | 'expansion' | 'accessory';
   players: string;
   playTime?: string;
   yearPublished?: string;
@@ -56,7 +56,7 @@ export interface BGGGameDetail {
   bggBayesRating?: number;
   bggRank?: number;
   weight?: number;
-  gameType?: 'base' | 'expansion';
+  gameType?: 'base' | 'expansion' | 'accessory';
   relatedGames?: string;
   expansionIds?: number[];
 }
