@@ -3,7 +3,7 @@ import { UndoOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { CURRENCY_SYMBOLS, toCNY } from '../types';
-import type { BoardGame, Currency, OwnedExpansion } from '../types';
+import type { BoardGame, Currency } from '../types';
 import { updateGame } from '../utils/db';
 import { supabase } from '../utils/supabase';
 import StatCard from '../components/StatCard';
@@ -27,54 +27,47 @@ function CurrencyBreakdown({ totals }: { totals: Record<string, number> }) {
 
 export default function Sold() {
   const { state, dispatch } = useGameStore();
-  const [expansionsByGame, setExpansionsByGame] = useState<Record<string, OwnedExpansion[]>>({});
   const [loading, setLoading] = useState(true);
 
   const soldGames = state.games.filter((g) => g.sold);
   const soldGameIds = soldGames.map((g) => g.id);
 
-  // Fetch owned expansions for all sold games
+  // Fetch owned expansions/accessories for all sold games, split by item_type
+  const [costByGame, setCostByGame] = useState<Record<string, { exp: number; acc: number; expByCurrency: Record<string, number>; accByCurrency: Record<string, number> }>>({});
+
   useEffect(() => {
     if (soldGameIds.length === 0) { setLoading(false); return; }
     (async () => {
       const { data } = await supabase
         .from('owned_expansions')
-        .select('*')
+        .select('base_game_id, price, currency, item_type')
         .eq('owned', true)
         .in('base_game_id', soldGameIds);
-      const map: Record<string, OwnedExpansion[]> = {};
+      const map: Record<string, { exp: number; acc: number; expByCurrency: Record<string, number>; accByCurrency: Record<string, number> }> = {};
       for (const r of data || []) {
-        const exp: OwnedExpansion = {
-          id: r.id, userId: r.user_id, baseGameId: r.base_game_id,
-          bggId: r.bgg_id, name: r.name, image: r.image, owned: r.owned,
-          price: r.price ? Number(r.price) : undefined,
-          currency: r.currency, purchaseDate: r.purchase_date,
-        };
-        if (!map[exp.baseGameId]) map[exp.baseGameId] = [];
-        map[exp.baseGameId].push(exp);
+        const p = Number(r.price) || 0;
+        if (p <= 0) continue;
+        const c = r.currency || 'CNY';
+        const cny = toCNY(p, c);
+        if (!map[r.base_game_id]) map[r.base_game_id] = { exp: 0, acc: 0, expByCurrency: {}, accByCurrency: {} };
+        const entry = map[r.base_game_id];
+        if (r.item_type === 'accessory') {
+          entry.acc += cny;
+          entry.accByCurrency[c] = (entry.accByCurrency[c] || 0) + p;
+        } else {
+          entry.exp += cny;
+          entry.expByCurrency[c] = (entry.expByCurrency[c] || 0) + p;
+        }
       }
-      setExpansionsByGame(map);
+      setCostByGame(map);
       setLoading(false);
     })();
   }, [soldGameIds.join(',')]);
 
-  // Get expansion cost in CNY for a game
-  const expCostCny = (gameId: string): number => {
-    return (expansionsByGame[gameId] || []).reduce((sum, e) => {
-      return sum + (e.price ? toCNY(e.price, e.currency || 'CNY') : 0);
-    }, 0);
-  };
-
-  // Get expansion cost by currency for a game
-  const expCostByCurrency = (gameId: string): Record<string, number> => {
-    const map: Record<string, number> = {};
-    for (const e of expansionsByGame[gameId] || []) {
-      if (e.price) {
-        const c = e.currency || 'CNY';
-        map[c] = (map[c] || 0) + e.price;
-      }
-    }
-    return map;
+  const gameCostCny = (g: BoardGame) => {
+    const base = toCNY(g.price, g.currency);
+    const costs = costByGame[g.id];
+    return base + (costs?.exp || 0) + (costs?.acc || 0);
   };
 
   const boughtByCurrency: Record<string, number> = {};
@@ -82,9 +75,14 @@ export default function Sold() {
   for (const g of soldGames) {
     const bc = g.currency || 'CNY';
     boughtByCurrency[bc] = (boughtByCurrency[bc] || 0) + g.price;
-    // Add expansion costs
-    for (const [c, amount] of Object.entries(expCostByCurrency(g.id))) {
-      boughtByCurrency[c] = (boughtByCurrency[c] || 0) + amount;
+    const costs = costByGame[g.id];
+    if (costs) {
+      for (const [c, amount] of Object.entries(costs.expByCurrency)) {
+        boughtByCurrency[c] = (boughtByCurrency[c] || 0) + amount;
+      }
+      for (const [c, amount] of Object.entries(costs.accByCurrency)) {
+        boughtByCurrency[c] = (boughtByCurrency[c] || 0) + amount;
+      }
     }
     const sc = g.soldCurrency || bc;
     soldByCurrency[sc] = (soldByCurrency[sc] || 0) + (g.soldPrice || 0);
@@ -92,8 +90,7 @@ export default function Sold() {
 
   const totalProfit = soldGames.reduce((sum, g) => {
     const sellCny = toCNY(g.soldPrice || 0, g.soldCurrency || g.currency);
-    const buyCny = toCNY(g.price, g.currency) + expCostCny(g.id);
-    return sum + sellCny - buyCny;
+    return sum + sellCny - gameCostCny(g);
   }, 0);
   const totalProfitRounded = Math.round(totalProfit);
 
@@ -142,16 +139,21 @@ export default function Sold() {
     {
       title: 'Buy Price',
       key: 'buyPrice',
-      width: 130,
+      width: 150,
       render: (_: any, r: BoardGame) => {
-        const exps = expansionsByGame[r.id];
-        const hasExp = exps && exps.length > 0;
+        const baseCny = Math.round(toCNY(r.price, r.currency));
+        const costs = costByGame[r.id];
+        const expCny = Math.round(costs?.exp || 0);
+        const accCny = Math.round(costs?.acc || 0);
+        const total = baseCny + expCny + accCny;
+        const hasExtra = expCny > 0 || accCny > 0;
+        const parts = [expCny > 0 ? `exp ¥${expCny}` : '', accCny > 0 ? `acc ¥${accCny}` : ''].filter(Boolean);
         return (
           <div>
-            <div>{CURRENCY_SYMBOLS[r.currency as Currency] || ''}{r.price}</div>
-            {hasExp && (
+            <div>¥{total}</div>
+            {hasExtra && (
               <div style={{ fontSize: 11, color: '#999' }}>
-                +{exps.length} exp: ¥{Math.round(expCostCny(r.id))}
+                base ¥{baseCny} + {parts.join(' + ')}
               </div>
             )}
           </div>
@@ -170,12 +172,12 @@ export default function Sold() {
       key: 'profit',
       width: 140,
       sorter: (a: BoardGame, b: BoardGame) => {
-        const da = toCNY(a.soldPrice || 0, a.soldCurrency || a.currency) - toCNY(a.price, a.currency) - expCostCny(a.id);
-        const db = toCNY(b.soldPrice || 0, b.soldCurrency || b.currency) - toCNY(b.price, b.currency) - expCostCny(b.id);
+        const da = toCNY(a.soldPrice || 0, a.soldCurrency || a.currency) - gameCostCny(a);
+        const db = toCNY(b.soldPrice || 0, b.soldCurrency || b.currency) - gameCostCny(b);
         return da - db;
       },
       render: (_: any, r: BoardGame) => {
-        const buyCny = toCNY(r.price, r.currency) + expCostCny(r.id);
+        const buyCny = gameCostCny(r);
         const sellCny = toCNY(r.soldPrice || 0, r.soldCurrency || r.currency);
         const diff = Math.round(sellCny - buyCny);
         const color = diff > 0 ? '#52c41a' : diff < 0 ? '#ff4d4f' : '#999';

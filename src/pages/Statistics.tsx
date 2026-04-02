@@ -37,6 +37,7 @@ export default function Statistics() {
         weight: r.weight ? Number(r.weight) : undefined,
         designer: r.designer,
         yearPublished: r.year_published,
+        itemType: r.item_type || 'expansion',
       })));
       setLoading(false);
     })();
@@ -50,13 +51,14 @@ export default function Statistics() {
     );
   }
 
-  // Combine games + owned expansions as spending items
+  // Combine games + owned expansions/accessories as spending items
   const allSpendingItems = [
-    ...games.map((g) => ({ price: g.price, currency: g.currency || 'CNY', purchaseDate: g.purchaseDate })),
+    ...games.map((g) => ({ price: g.price, currency: g.currency || 'CNY', purchaseDate: g.purchaseDate, type: 'game' })),
     ...ownedExpansions.filter((e) => e.price).map((e) => ({
       price: e.price!,
       currency: e.currency || 'CNY',
       purchaseDate: e.purchaseDate || '',
+      type: e.itemType === 'accessory' ? 'accessory' : 'expansion',
     })),
   ];
 
@@ -116,14 +118,14 @@ export default function Statistics() {
     .sort((a, b) => (b.rating || 0) - (a.rating || 0))
     .slice(0, 5);
 
-  // Most expensive - sorted by CNY equivalent (games + expansions)
+  // Most expensive - sorted by CNY equivalent (games + expansions + accessories)
   const allNamedItems = [
     ...games.map((g) => ({ name: g.name, price: g.price, currency: g.currency || 'CNY', type: 'game' })),
     ...ownedExpansions.filter((e) => e.price).map((e) => ({
       name: e.name,
       price: e.price!,
       currency: e.currency || 'CNY',
-      type: 'expansion',
+      type: e.itemType === 'accessory' ? 'accessory' : 'expansion',
     })),
   ];
   const mostExpensive = [...allNamedItems]
@@ -196,7 +198,7 @@ export default function Statistics() {
         </Col>
 
         <Col xs={24} md={12}>
-          <Card title="Monthly Spending (incl. Expansions)">
+          <Card title="Monthly Spending (incl. Exp & Acc)">
             {monthlyData.length === 0 ? (
               <Empty description="No purchase date data" />
             ) : (
@@ -254,13 +256,16 @@ export default function Statistics() {
         </Col>
 
         <Col xs={24} md={12}>
-          <Card title="Most Expensive (CNY, incl. Expansions)">
+          <Card title="Most Expensive (CNY, incl. Exp & Acc)">
             {mostExpensive.map((item, i) => (
               <div key={`${item.name}-${i}`} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
                 <span>
                   {i + 1}. {item.name}
                   {item.type === 'expansion' && (
                     <span style={{ fontSize: 11, color: '#999', marginLeft: 4 }}>(exp)</span>
+                  )}
+                  {item.type === 'accessory' && (
+                    <span style={{ fontSize: 11, color: '#999', marginLeft: 4 }}>(acc)</span>
                   )}
                 </span>
                 <span style={{ fontWeight: 600 }}>
