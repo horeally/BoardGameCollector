@@ -37,6 +37,13 @@ export default function Sold() {
     soldByCurrency[sc] = (soldByCurrency[sc] || 0) + (g.soldPrice || 0);
   }
 
+  const totalProfit = soldGames.reduce((sum, g) => {
+    const sellCny = toCNY(g.soldPrice || 0, g.soldCurrency || g.currency);
+    const buyCny = toCNY(g.price, g.currency);
+    return sum + sellCny - buyCny;
+  }, 0);
+  const totalProfitRounded = Math.round(totalProfit);
+
   const handleUnsell = async (game: BoardGame) => {
     const updatedGame = {
       ...game,
@@ -172,6 +179,17 @@ export default function Sold() {
         <Col xs={12} sm={6}>
           <StatCard title="Total Sold">
             <CurrencyBreakdown totals={soldByCurrency} />
+          </StatCard>
+        </Col>
+        <Col xs={12} sm={6}>
+          <StatCard title="Total Profit (CNY)">
+            <div style={{
+              fontSize: 24,
+              fontWeight: 500,
+              color: totalProfitRounded > 0 ? '#52c41a' : totalProfitRounded < 0 ? '#ff4d4f' : undefined,
+            }}>
+              {totalProfitRounded > 0 ? '+' : ''}¥{totalProfitRounded}
+            </div>
           </StatCard>
         </Col>
       </Row>
