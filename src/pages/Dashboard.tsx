@@ -1,7 +1,9 @@
 import { Col, Row, Table, Typography } from 'antd';
+import { useEffect, useState } from 'react';
 import { useGameStore } from '../store/gameStore';
-import { CURRENCY_SYMBOLS } from '../types';
+import { CURRENCY_SYMBOLS, toCNY } from '../types';
 import type { Currency } from '../types';
+import { supabase } from '../utils/supabase';
 import StatCard from '../components/StatCard';
 import dayjs from 'dayjs';
 
@@ -34,6 +36,23 @@ export default function Dashboard() {
   const { state } = useGameStore();
   const { games } = state;
   const ownedGames = games.filter((g) => !g.sold);
+  const [expByGame, setExpByGame] = useState<Record<string, number>>({});
+
+  // Fetch expansion/accessory costs grouped by base_game_id
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('owned_expansions')
+        .select('base_game_id, price, currency')
+        .eq('owned', true);
+      const map: Record<string, number> = {};
+      for (const r of data || []) {
+        const cny = toCNY(Number(r.price) || 0, r.currency || 'CNY');
+        map[r.base_game_id] = (map[r.base_game_id] || 0) + cny;
+      }
+      setExpByGame(map);
+    })();
+  }, []);
 
   const totalGames = ownedGames.length;
   const gameSpentByCurrency = groupByCurrency(ownedGames.map((g) => ({ price: g.price, currency: g.currency })));
@@ -56,10 +75,22 @@ export default function Dashboard() {
     { title: 'Name', dataIndex: 'name', key: 'name' },
     { title: 'Category', dataIndex: 'category', key: 'category' },
     {
-      title: 'Price',
+      title: 'Total Cost (CNY)',
       key: 'price',
-      render: (_: any, r: any) =>
-        `${CURRENCY_SYMBOLS[r.currency as Currency] || ''}${r.price}`,
+      render: (_: any, r: any) => {
+        const gameCny = Math.round(toCNY(r.price, r.currency));
+        const expCny = Math.round(expByGame[r.id] || 0);
+        return (
+          <div>
+            <div>¥{gameCny + expCny}</div>
+            {expCny > 0 && (
+              <div style={{ fontSize: 11, color: '#999' }}>
+                base ¥{gameCny} + exp ¥{expCny}
+              </div>
+            )}
+          </div>
+        );
+      },
     },
     { title: 'Date', dataIndex: 'purchaseDate', key: 'purchaseDate' },
   ];
