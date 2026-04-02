@@ -9,7 +9,7 @@ import dayjs from 'dayjs';
 import { useGameStore } from '../store/gameStore';
 import { CATEGORIES, CATEGORY_COLORS, CURRENCY_SYMBOLS } from '../types';
 import type { BoardGame, Currency, OwnedExpansion } from '../types';
-import { deleteGame, updateGame, updateLinkedGameIds, fetchExpansionsForGame, upsertExpansions, updateExpansionOwnership, fetchExpansionTotalSpent, fetchExpansionSpentByCurrency } from '../utils/db';
+import { deleteGame, updateGame, updateLinkedGameIds, fetchExpansionsForGame, upsertExpansions, updateExpansionOwnership, insertAccessory, deleteAccessory, fetchExpansionTotalSpent, fetchExpansionSpentByCurrency } from '../utils/db';
 import { fetchExpansions } from '../utils/bgg';
 
 const { Title } = Typography;
@@ -192,19 +192,20 @@ export default function Collection() {
     });
   };
 
-  // Load expansions for a base game
+  // Load expansions + accessories for a base game
   const loadExpansions = async (game: BoardGame) => {
     if (expansionMap[game.id] || loadingExpansions[game.id]) return;
-    if (game.gameType !== 'base' || !game.expansionBggIds?.length) return;
+    if (game.gameType !== 'base') return;
 
     setLoadingExpansions((prev) => ({ ...prev, [game.id]: true }));
     try {
-      // Check DB first
       let dbExpansions = await fetchExpansionsForGame(game.id);
 
-      if (dbExpansions.length === 0 && game.expansionBggIds.length > 0) {
-        // Fetch from BGG and save to DB
-        const bggData = await fetchExpansions(game.expansionBggIds);
+      // Fetch BGG expansions if not yet cached
+      const hasExpansionBgg = game.expansionBggIds && game.expansionBggIds.length > 0;
+      const hasDbExpansions = dbExpansions.some((e) => e.itemType !== 'accessory');
+      if (!hasDbExpansions && hasExpansionBgg) {
+        const bggData = await fetchExpansions(game.expansionBggIds!);
         const newExpansions = bggData.map((e) => ({
           userId: state.userId!,
           baseGameId: game.id,
@@ -290,6 +291,35 @@ export default function Collection() {
       }));
     } catch {
       message.error('Failed to update date');
+    }
+  };
+
+  const handleAddAccessory = async (game: BoardGame) => {
+    const name = window.prompt('Accessory name:');
+    if (!name?.trim()) return;
+    try {
+      const acc = await insertAccessory(game.id, state.userId!, name.trim(), undefined, game.currency, game.purchaseDate);
+      setExpansionMap((prev) => ({
+        ...prev,
+        [game.id]: [...(prev[game.id] || []), acc],
+      }));
+      message.success('Accessory added');
+    } catch {
+      message.error('Failed to add accessory');
+    }
+  };
+
+  const handleDeleteAccessory = async (exp: OwnedExpansion) => {
+    try {
+      await deleteAccessory(exp.id);
+      setExpansionMap((prev) => ({
+        ...prev,
+        [exp.baseGameId]: prev[exp.baseGameId].filter((e) => e.id !== exp.id),
+      }));
+      refreshExpansionSpent();
+      message.success('Accessory deleted');
+    } catch {
+      message.error('Failed to delete accessory');
     }
   };
 
@@ -522,7 +552,11 @@ export default function Collection() {
       key: 'type',
       width: 100,
       align: 'center' as const,
-      render: () => <Tag color="orange">Expansion</Tag>,
+      render: (_: any, r: OwnedExpansion) => (
+        <Tag color={r.itemType === 'accessory' ? 'purple' : 'orange'}>
+          {r.itemType === 'accessory' ? 'Accessory' : 'Expansion'}
+        </Tag>
+      ),
     },
     {
       title: 'Players',
@@ -602,6 +636,18 @@ export default function Collection() {
         />
       ),
     },
+    {
+      title: '',
+      key: 'actions',
+      width: 50,
+      align: 'center' as const,
+      render: (_: any, r: OwnedExpansion) =>
+        r.itemType === 'accessory' ? (
+          <Popconfirm title="Delete this accessory?" onConfirm={() => handleDeleteAccessory(r)}>
+            <Button type="link" size="small" danger icon={<DeleteOutlined />} />
+          </Popconfirm>
+        ) : null,
+    },
   ];
 
   return (
@@ -639,16 +685,15 @@ export default function Collection() {
         }}
         rowClassName={(r) => (r.id === highlightedId ? 'linked-highlight' : '')}
         expandable={{
-          rowExpandable: (record) =>
-            record.gameType === 'base' && !!record.expansionBggIds?.length,
+          rowExpandable: (record) => record.gameType === 'base',
           onExpand: (expanded, record) => {
             if (expanded) loadExpansions(record);
           },
           expandedRowRender: (record) => {
             const exps = expansionMap[record.id];
-            const loading = loadingExpansions[record.id];
+            const isLoading = loadingExpansions[record.id];
 
-            if (loading) {
+            if (isLoading) {
               return (
                 <div style={{ textAlign: 'center', padding: 24 }}>
                   <Spin tip="Loading expansions from BGG..." />
@@ -656,26 +701,38 @@ export default function Collection() {
               );
             }
 
-            if (!exps || exps.length === 0) {
-              return <div style={{ padding: 12, color: '#999' }}>No expansions found</div>;
-            }
-
-            const ownedCount = exps.filter((e) => e.owned).length;
+            const expansions = (exps || []).filter((e) => e.itemType !== 'accessory');
+            const ownedCount = expansions.filter((e) => e.owned).length;
 
             return (
               <div style={{ paddingLeft: 16 }}>
-                <div style={{ marginBottom: 8, fontSize: 13, color: '#666' }}>
-                  {ownedCount} / {exps.length} expansions owned
-                </div>
-                <Table
-                  dataSource={exps}
-                  columns={expansionColumns}
-                  rowKey="id"
+                {expansions.length > 0 && (
+                  <div style={{ marginBottom: 8, fontSize: 13, color: '#666' }}>
+                    {ownedCount} / {expansions.length} expansions owned
+                  </div>
+                )}
+                {(exps && exps.length > 0) && (
+                  <Table
+                    dataSource={exps}
+                    columns={expansionColumns}
+                    rowKey="id"
+                    size="small"
+                    pagination={false}
+                    scroll={{ x: 900 }}
+                    rowClassName={(r) => (r.owned ? '' : 'expansion-unowned')}
+                  />
+                )}
+                {(!exps || exps.length === 0) && (
+                  <div style={{ padding: '4px 0 8px', color: '#999', fontSize: 13 }}>No expansions or accessories yet</div>
+                )}
+                <Button
+                  type="dashed"
                   size="small"
-                  pagination={false}
-                  scroll={{ x: 900 }}
-                  rowClassName={(r) => (r.owned ? '' : 'expansion-unowned')}
-                />
+                  style={{ marginTop: 8 }}
+                  onClick={() => handleAddAccessory(record)}
+                >
+                  + Add Accessory
+                </Button>
               </div>
             );
           },

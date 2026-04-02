@@ -162,6 +162,7 @@ function toOwnedExpansion(row: any): OwnedExpansion {
     name: row.name,
     image: row.image,
     owned: row.owned,
+    itemType: row.item_type || 'expansion',
     price: row.price ? Number(row.price) : undefined,
     currency: row.currency,
     purchaseDate: row.purchase_date,
@@ -237,6 +238,45 @@ export async function upsertExpansions(
   const { error } = await supabase
     .from('owned_expansions')
     .upsert(rows, { onConflict: 'user_id,base_game_id,bgg_id' });
+
+  if (error) throw error;
+}
+
+export async function insertAccessory(
+  baseGameId: string,
+  userId: string,
+  name: string,
+  price?: number,
+  currency?: string,
+  purchaseDate?: string,
+): Promise<OwnedExpansion> {
+  const row = {
+    user_id: userId,
+    base_game_id: baseGameId,
+    bgg_id: 0,
+    name,
+    owned: true,
+    item_type: 'accessory',
+    price: price || null,
+    currency: currency || 'CNY',
+    purchase_date: purchaseDate || null,
+  };
+
+  const { data, error } = await supabase
+    .from('owned_expansions')
+    .insert(row)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return toOwnedExpansion(data);
+}
+
+export async function deleteAccessory(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('owned_expansions')
+    .delete()
+    .eq('id', id);
 
   if (error) throw error;
 }
