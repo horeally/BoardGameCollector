@@ -548,7 +548,7 @@ export default function Collection() {
         url ? (
           <img src={url} alt="" style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 3 }} />
         ) : (
-          <div style={{ width: 50, height: 50, background: '#f0f0f0', borderRadius: 3 }} />
+          <div style={{ width: 50, height: 50, background: '#f0f0f0', borderRadius: 3, margin: '0 auto' }} />
         ),
     },
     {
