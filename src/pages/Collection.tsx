@@ -23,7 +23,7 @@ export default function Collection() {
   const [sellingGame, setSellingGame] = useState<BoardGame | null>(null);
   const [sellForm] = Form.useForm();
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 20;
+  const pageSize = 50;
   const [sorter, setSorter] = useState<{ field?: string; order?: 'ascend' | 'descend' }>({});
 
   // Linked versions: highlight + scroll

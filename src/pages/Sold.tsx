@@ -275,7 +275,7 @@ export default function Sold() {
         columns={columns}
         rowKey="id"
         size="small"
-        pagination={{ pageSize: 20 }}
+        pagination={{ pageSize: 50 }}
       />
     </div>
   );
