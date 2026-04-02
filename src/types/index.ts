@@ -56,6 +56,7 @@ export interface BGGGameDetail {
   bggBayesRating?: number;
   bggRank?: number;
   weight?: number;
+  gameType?: 'base' | 'expansion';
   relatedGames?: string;
   expansionIds?: number[];
 }

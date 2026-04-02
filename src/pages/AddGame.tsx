@@ -80,6 +80,7 @@ export default function AddGame() {
           relatedGames: detail.relatedGames,
           expansionBggIds: detail.expansionIds,
           category: detail.category,
+          gameType: detail.gameType,
         });
         message.success('Game info loaded from BGG');
       }
@@ -120,6 +121,7 @@ export default function AddGame() {
           relatedGames: detail.relatedGames,
           expansionBggIds: detail.expansionIds,
           category: detail.category,
+          gameType: detail.gameType,
         });
         message.success('BGG data refreshed');
       }

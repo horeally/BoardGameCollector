@@ -7,7 +7,7 @@ const BGG_API = '/bgg-api';
 export async function searchBGG(query: string): Promise<BGGSearchResult[]> {
   if (!query.trim()) return [];
 
-  const res = await fetch(`${BGG_API}/search?query=${encodeURIComponent(query)}&type=boardgame`);
+  const res = await fetch(`${BGG_API}/search?query=${encodeURIComponent(query)}&type=boardgame,boardgameexpansion`);
   const xml = await res.text();
   const data = parser.parse(xml);
 
@@ -93,6 +93,7 @@ export async function getBGGDetail(id: number): Promise<BGGGameDetail | null> {
   const item = data?.items?.item;
   if (!item) return null;
 
+  const isExpansion = item['@_type'] === 'boardgameexpansion';
   const names = Array.isArray(item.name) ? item.name : [item.name];
   const primaryName = names.find((n: any) => n['@_type'] === 'primary')?.['@_value'] || '';
 
@@ -115,6 +116,7 @@ export async function getBGGDetail(id: number): Promise<BGGGameDetail | null> {
     id,
     name: primaryName,
     image: item.image || item.thumbnail,
+    gameType: isExpansion ? 'expansion' : 'base',
     minPlayers: Number(item.minplayers?.['@_value']) || undefined,
     maxPlayers: Number(item.maxplayers?.['@_value']) || undefined,
     playTime: item.playingtime?.['@_value'] ? `${item.playingtime['@_value']} min` : undefined,
