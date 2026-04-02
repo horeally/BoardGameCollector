@@ -349,7 +349,7 @@ export default function AddGame() {
         <Row gutter={16}>
           <Col span={6}>
             <Form.Item name="rating" label="My Rating (1-10)">
-              <InputNumber style={{ width: '100%' }} min={1} max={10} />
+              <InputNumber style={{ width: '100%' }} min={1} max={10} precision={0} />
             </Form.Item>
           </Col>
           <Col span={6}>

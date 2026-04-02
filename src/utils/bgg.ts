@@ -21,17 +21,24 @@ export async function searchBGG(query: string): Promise<BGGSearchResult[]> {
     yearPublished: item.yearpublished?.['@_value'],
   }));
 
-  const q = query.toLowerCase();
+  const q = query.toLowerCase().trim();
+  // Word boundary pattern: query appears as a standalone word
+  const wordRe = new RegExp(`(^|[\\s:;,._\\-–—()])${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([\\s:;,._\\-–—()]|$)`, 'i');
+
+  const relevance = (name: string): number => {
+    const n = name.toLowerCase();
+    if (n === q) return 0;                     // exact match
+    if (n.startsWith(q + ' ') || n.startsWith(q + ':')) return 1; // "Ra: ..." or "Ra something"
+    if (wordRe.test(name)) return 2;           // query as whole word anywhere
+    if (n.startsWith(q)) return 3;             // starts with query
+    return 4;                                  // contains query
+  };
+
   results.sort((a: BGGSearchResult, b: BGGSearchResult) => {
-    const aName = a.name.toLowerCase();
-    const bName = b.name.toLowerCase();
-    const aExact = aName === q ? 0 : 1;
-    const bExact = bName === q ? 0 : 1;
-    if (aExact !== bExact) return aExact - bExact;
-    const aStarts = aName.startsWith(q) ? 0 : 1;
-    const bStarts = bName.startsWith(q) ? 0 : 1;
-    if (aStarts !== bStarts) return aStarts - bStarts;
-    return aName.length - bName.length;
+    const ra = relevance(a.name);
+    const rb = relevance(b.name);
+    if (ra !== rb) return ra - rb;
+    return a.name.length - b.name.length;
   });
 
   return results.slice(0, 20);
