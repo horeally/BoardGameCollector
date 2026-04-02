@@ -163,6 +163,7 @@ function toOwnedExpansion(row: any): OwnedExpansion {
     image: row.image,
     owned: row.owned,
     itemType: row.item_type || 'expansion',
+    official: row.official || false,
     price: row.price ? Number(row.price) : undefined,
     currency: row.currency,
     purchaseDate: row.purchase_date,
@@ -270,6 +271,15 @@ export async function insertAccessory(
 
   if (error) throw error;
   return toOwnedExpansion(data);
+}
+
+export async function updateAccessoryOfficial(id: string, official: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('owned_expansions')
+    .update({ official })
+    .eq('id', id);
+
+  if (error) throw error;
 }
 
 export async function deleteAccessory(id: string): Promise<void> {

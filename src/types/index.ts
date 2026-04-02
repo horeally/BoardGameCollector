@@ -82,6 +82,7 @@ export interface OwnedExpansion {
   image?: string;
   owned: boolean;
   itemType?: 'expansion' | 'accessory';
+  official?: boolean;
   price?: number;
   currency?: string;
   purchaseDate?: string;

@@ -9,7 +9,7 @@ import dayjs from 'dayjs';
 import { useGameStore } from '../store/gameStore';
 import { CATEGORIES, CATEGORY_COLORS, CURRENCY_SYMBOLS } from '../types';
 import type { BoardGame, Currency, OwnedExpansion } from '../types';
-import { deleteGame, updateGame, updateLinkedGameIds, fetchExpansionsForGame, upsertExpansions, updateExpansionOwnership, insertAccessory, deleteAccessory, fetchExpansionTotalSpent, fetchExpansionSpentByCurrency } from '../utils/db';
+import { deleteGame, updateGame, updateLinkedGameIds, fetchExpansionsForGame, upsertExpansions, updateExpansionOwnership, insertAccessory, deleteAccessory, updateAccessoryOfficial, fetchExpansionTotalSpent, fetchExpansionSpentByCurrency } from '../utils/db';
 import { fetchExpansions } from '../utils/bgg';
 
 const { Title } = Typography;
@@ -309,6 +309,20 @@ export default function Collection() {
     }
   };
 
+  const handleAccessoryOfficialChange = async (exp: OwnedExpansion, official: boolean) => {
+    try {
+      await updateAccessoryOfficial(exp.id, official);
+      setExpansionMap((prev) => ({
+        ...prev,
+        [exp.baseGameId]: prev[exp.baseGameId].map((e) =>
+          e.id === exp.id ? { ...e, official } : e
+        ),
+      }));
+    } catch {
+      message.error('Failed to update');
+    }
+  };
+
   const handleDeleteAccessory = async (exp: OwnedExpansion) => {
     try {
       await deleteAccessory(exp.id);
@@ -557,6 +571,19 @@ export default function Collection() {
           {r.itemType === 'accessory' ? 'Accessory' : 'Expansion'}
         </Tag>
       ),
+    },
+    {
+      title: 'Official',
+      key: 'official',
+      width: 75,
+      align: 'center' as const,
+      render: (_: any, r: OwnedExpansion) =>
+        r.itemType === 'accessory' ? (
+          <Checkbox
+            checked={r.official}
+            onChange={(e) => handleAccessoryOfficialChange(r, e.target.checked)}
+          />
+        ) : null,
     },
     {
       title: 'Players',
