@@ -1,7 +1,7 @@
 import { Button, Popconfirm, Table, Tag, Typography, message } from 'antd';
 import { UndoOutlined } from '@ant-design/icons';
 import { useGameStore } from '../store/gameStore';
-import { CURRENCY_SYMBOLS } from '../types';
+import { CURRENCY_SYMBOLS, toCNY } from '../types';
 import type { BoardGame, Currency } from '../types';
 import { updateGame } from '../utils/db';
 import StatCard from '../components/StatCard';
@@ -94,18 +94,23 @@ export default function Sold() {
         `${CURRENCY_SYMBOLS[(r.soldCurrency || r.currency) as Currency] || ''}${r.soldPrice || 0}`,
     },
     {
-      title: 'Profit/Loss',
+      title: 'Profit/Loss (CNY)',
       key: 'profit',
-      width: 120,
-      sorter: (a: BoardGame, b: BoardGame) =>
-        ((a.soldPrice || 0) - a.price) - ((b.soldPrice || 0) - b.price),
+      width: 140,
+      sorter: (a: BoardGame, b: BoardGame) => {
+        const da = toCNY(a.soldPrice || 0, a.soldCurrency || a.currency) - toCNY(a.price, a.currency);
+        const db = toCNY(b.soldPrice || 0, b.soldCurrency || b.currency) - toCNY(b.price, b.currency);
+        return da - db;
+      },
       render: (_: any, r: BoardGame) => {
-        const diff = (r.soldPrice || 0) - r.price;
+        const buyCny = toCNY(r.price, r.currency);
+        const sellCny = toCNY(r.soldPrice || 0, r.soldCurrency || r.currency);
+        const diff = Math.round(sellCny - buyCny);
         const color = diff > 0 ? '#52c41a' : diff < 0 ? '#ff4d4f' : '#999';
         const prefix = diff > 0 ? '+' : '';
         return (
           <span style={{ color, fontWeight: 600 }}>
-            {prefix}{CURRENCY_SYMBOLS[r.currency as Currency] || ''}{diff}
+            {prefix}¥{diff}
           </span>
         );
       },
