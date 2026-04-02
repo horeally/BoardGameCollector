@@ -36,21 +36,26 @@ export default function Dashboard() {
   const { state } = useGameStore();
   const { games } = state;
   const ownedGames = games.filter((g) => !g.sold);
-  const [expByGame, setExpByGame] = useState<Record<string, number>>({});
+  const [costByGame, setCostByGame] = useState<Record<string, { exp: number; acc: number }>>({});
 
-  // Fetch expansion/accessory costs grouped by base_game_id
+  // Fetch expansion/accessory costs grouped by base_game_id and item_type
   useEffect(() => {
     (async () => {
       const { data } = await supabase
         .from('owned_expansions')
-        .select('base_game_id, price, currency')
+        .select('base_game_id, price, currency, item_type')
         .eq('owned', true);
-      const map: Record<string, number> = {};
+      const map: Record<string, { exp: number; acc: number }> = {};
       for (const r of data || []) {
         const cny = toCNY(Number(r.price) || 0, r.currency || 'CNY');
-        map[r.base_game_id] = (map[r.base_game_id] || 0) + cny;
+        if (!map[r.base_game_id]) map[r.base_game_id] = { exp: 0, acc: 0 };
+        if (r.item_type === 'accessory') {
+          map[r.base_game_id].acc += cny;
+        } else {
+          map[r.base_game_id].exp += cny;
+        }
       }
-      setExpByGame(map);
+      setCostByGame(map);
     })();
   }, []);
 
@@ -78,14 +83,18 @@ export default function Dashboard() {
       title: 'Total Cost (CNY)',
       key: 'price',
       render: (_: any, r: any) => {
-        const gameCny = Math.round(toCNY(r.price, r.currency));
-        const expCny = Math.round(expByGame[r.id] || 0);
+        const baseCny = Math.round(toCNY(r.price, r.currency));
+        const costs = costByGame[r.id];
+        const expCny = Math.round(costs?.exp || 0);
+        const accCny = Math.round(costs?.acc || 0);
+        const total = baseCny + expCny + accCny;
+        const parts = [`base ¥${baseCny}`, expCny > 0 ? `exp ¥${expCny}` : '', accCny > 0 ? `acc ¥${accCny}` : ''].filter(Boolean);
         return (
           <div>
-            <div>¥{gameCny + expCny}</div>
-            {expCny > 0 && (
+            <div>¥{total}</div>
+            {(expCny > 0 || accCny > 0) && (
               <div style={{ fontSize: 11, color: '#999' }}>
-                base ¥{gameCny} + exp ¥{expCny}
+                {parts.join(' + ')}
               </div>
             )}
           </div>
