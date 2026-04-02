@@ -4,6 +4,13 @@ import type { BGGSearchResult, BGGGameDetail, ExpansionInfo } from '../types';
 const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '@_' });
 const BGG_API = '/bgg-api';
 
+// Decode HTML entities like &#039; &amp; &lt; etc.
+function decodeEntities(str: string): string {
+  const el = document.createElement('textarea');
+  el.innerHTML = str;
+  return el.value;
+}
+
 export async function searchBGG(query: string): Promise<BGGSearchResult[]> {
   if (!query.trim()) return [];
 
@@ -17,7 +24,7 @@ export async function searchBGG(query: string): Promise<BGGSearchResult[]> {
   const list = Array.isArray(items) ? items : [items];
   const results = list.map((item: any) => ({
     id: Number(item['@_id']),
-    name: item.name?.['@_value'] || (Array.isArray(item.name) ? item.name[0]?.['@_value'] : ''),
+    name: decodeEntities(item.name?.['@_value'] || (Array.isArray(item.name) ? item.name[0]?.['@_value'] : '')),
     yearPublished: item.yearpublished?.['@_value'],
   }));
 
@@ -95,7 +102,7 @@ export async function getBGGDetail(id: number): Promise<BGGGameDetail | null> {
 
   const isExpansion = item['@_type'] === 'boardgameexpansion';
   const names = Array.isArray(item.name) ? item.name : [item.name];
-  const primaryName = names.find((n: any) => n['@_type'] === 'primary')?.['@_value'] || '';
+  const primaryName = decodeEntities(names.find((n: any) => n['@_type'] === 'primary')?.['@_value'] || '');
 
   const links = Array.isArray(item.link) ? item.link : [item.link];
 
@@ -157,7 +164,7 @@ export async function fetchExpansions(bggIds: number[]): Promise<ExpansionInfo[]
     const list = Array.isArray(items) ? items : [items];
     for (const item of list) {
       const names = Array.isArray(item.name) ? item.name : [item.name];
-      const primaryName = names.find((n: any) => n['@_type'] === 'primary')?.['@_value'] || '';
+      const primaryName = decodeEntities(names.find((n: any) => n['@_type'] === 'primary')?.['@_value'] || '');
 
       const itemLinks = Array.isArray(item.link) ? item.link : (item.link ? [item.link] : []);
       const designers = itemLinks
