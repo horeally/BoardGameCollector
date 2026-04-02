@@ -586,13 +586,6 @@ export default function Collection() {
         ) : null,
     },
     {
-      title: 'Players',
-      key: 'players',
-      width: 90,
-      align: 'center' as const,
-      render: () => '-',
-    },
-    {
       title: 'Price',
       key: 'price',
       width: 170,
