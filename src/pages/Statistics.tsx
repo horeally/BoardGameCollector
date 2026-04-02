@@ -118,18 +118,19 @@ export default function Statistics() {
     .sort((a, b) => (b.rating || 0) - (a.rating || 0))
     .slice(0, 5);
 
-  // Most expensive - sorted by CNY equivalent (games + expansions + accessories)
-  const allNamedItems = [
-    ...games.map((g) => ({ name: g.name, price: g.price, currency: g.currency || 'CNY', type: 'game' })),
-    ...ownedExpansions.filter((e) => e.price).map((e) => ({
-      name: e.name,
-      price: e.price!,
-      currency: e.currency || 'CNY',
-      type: e.itemType === 'accessory' ? 'accessory' : 'expansion',
-    })),
-  ];
-  const mostExpensive = [...allNamedItems]
-    .sort((a, b) => toCNY(b.price, b.currency) - toCNY(a.price, a.currency))
+  // Most expensive - per base game, total = base + exp + acc (all in CNY)
+  const mostExpensive = games.map((g) => {
+    const baseCny = toCNY(g.price, g.currency || 'CNY');
+    const related = ownedExpansions.filter((e) => e.baseGameId === g.id && e.price);
+    const expCny = related
+      .filter((e) => e.itemType !== 'accessory')
+      .reduce((sum, e) => sum + toCNY(e.price!, e.currency || 'CNY'), 0);
+    const accCny = related
+      .filter((e) => e.itemType === 'accessory')
+      .reduce((sum, e) => sum + toCNY(e.price!, e.currency || 'CNY'), 0);
+    return { name: g.name, totalCny: baseCny + expCny + accCny, baseCny, expCny, accCny };
+  })
+    .sort((a, b) => b.totalCny - a.totalCny)
     .slice(0, 10);
 
   return (
@@ -257,27 +258,27 @@ export default function Statistics() {
 
         <Col xs={24} md={12}>
           <Card title="Most Expensive (CNY, incl. Exp & Acc)">
-            {mostExpensive.map((item, i) => (
-              <div key={`${item.name}-${i}`} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span>
-                  {i + 1}. {item.name}
-                  {item.type === 'expansion' && (
-                    <span style={{ fontSize: 11, color: '#999', marginLeft: 4 }}>(exp)</span>
+            {mostExpensive.map((item, i) => {
+              const parts = [
+                `base ¥${Math.round(item.baseCny)}`,
+                item.expCny > 0 ? `exp ¥${Math.round(item.expCny)}` : '',
+                item.accCny > 0 ? `acc ¥${Math.round(item.accCny)}` : '',
+              ].filter(Boolean);
+              const hasExtra = item.expCny > 0 || item.accCny > 0;
+              return (
+                <div key={`${item.name}-${i}`} style={{ marginBottom: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>{i + 1}. {item.name}</span>
+                    <span style={{ fontWeight: 600 }}>¥{Math.round(item.totalCny)}</span>
+                  </div>
+                  {hasExtra && (
+                    <div style={{ fontSize: 11, color: '#999', textAlign: 'right' }}>
+                      {parts.join(' + ')}
+                    </div>
                   )}
-                  {item.type === 'accessory' && (
-                    <span style={{ fontSize: 11, color: '#999', marginLeft: 4 }}>(acc)</span>
-                  )}
-                </span>
-                <span style={{ fontWeight: 600 }}>
-                  ¥{Math.round(toCNY(item.price, item.currency))}
-                  {item.currency !== 'CNY' && (
-                    <span style={{ fontSize: 12, color: '#999', marginLeft: 4 }}>
-                      ({sym(item.currency)}{item.price})
-                    </span>
-                  )}
-                </span>
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </Card>
         </Col>
       </Row>
