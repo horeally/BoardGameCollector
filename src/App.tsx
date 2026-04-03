@@ -43,14 +43,14 @@ function AppLayout() {
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
-      <Sider breakpoint="lg" collapsedWidth="60" theme="dark">
+      <Sider breakpoint="lg" collapsedWidth="0" theme="dark" style={{ zIndex: 999 }}>
         <div style={{ height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 16 }}>
           BGC
         </div>
         <Menu theme="dark" mode="inline" selectedKeys={[selectedKey]} items={menuItems} />
       </Sider>
       <Layout>
-        <Content style={{ margin: 24 }}>
+        <Content style={{ margin: '16px 12px', maxWidth: '100%', overflow: 'auto' }}>
           <Outlet />
         </Content>
       </Layout>
@@ -201,11 +201,11 @@ export default function App() {
   return (
     <ConfigProvider theme={{ token: { colorPrimary: '#1677ff' } }}>
       <GameContext.Provider value={{ state, dispatch }}>
-        <div style={{ position: 'fixed', top: 12, right: 24, zIndex: 1000, display: 'flex', gap: 8 }}>
-          <Button icon={<ReloadOutlined />} size="small" loading={refreshingAll} onClick={handleRefreshAll}>Refresh BGG</Button>
-          <Button icon={<ExportOutlined />} size="small" onClick={handleExport}>Export</Button>
-          <Button icon={<LockOutlined />} size="small" onClick={() => setPwModalOpen(true)}>Password</Button>
-          <Button icon={<LogoutOutlined />} size="small" onClick={handleLogout}>Logout</Button>
+        <div className="top-actions" style={{ position: 'fixed', top: 12, right: 12, zIndex: 1000, display: 'flex', gap: 6 }}>
+          <Button icon={<ReloadOutlined />} size="small" loading={refreshingAll} onClick={handleRefreshAll}><span className="btn-text">Refresh BGG</span></Button>
+          <Button icon={<ExportOutlined />} size="small" onClick={handleExport}><span className="btn-text">Export</span></Button>
+          <Button icon={<LockOutlined />} size="small" onClick={() => setPwModalOpen(true)}><span className="btn-text">Password</span></Button>
+          <Button icon={<LogoutOutlined />} size="small" onClick={handleLogout}><span className="btn-text">Logout</span></Button>
         </div>
         <Modal
           title="Change Password"

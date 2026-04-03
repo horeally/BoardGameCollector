@@ -2,3 +2,15 @@ body {
   margin: 0;
   padding: 0;
 }
+
+/* Hide button text on small screens */
+@media (max-width: 768px) {
+  .btn-text {
+    display: none;
+  }
+  .top-actions {
+    right: 8px !important;
+    top: 8px !important;
+    gap: 4px !important;
+  }
+}

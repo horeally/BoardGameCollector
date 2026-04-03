@@ -11,7 +11,7 @@ interface StatCardProps {
 
 export default function StatCard({ title, value, prefix, suffix, precision, children }: StatCardProps) {
   return (
-    <Card bordered={false} style={{ textAlign: 'center' }}>
+    <Card bordered={false} style={{ textAlign: 'center', height: '100%' }}>
       {children ? (
         <div>
           <div style={{ color: 'rgba(0,0,0,0.45)', fontSize: 14, marginBottom: 4 }}>{title}</div>
