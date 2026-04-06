@@ -11,6 +11,7 @@ import { CATEGORIES, CATEGORY_COLORS, CURRENCY_SYMBOLS } from '../types';
 import type { BoardGame, Currency, OwnedExpansion } from '../types';
 import { deleteGame, updateGame, updateLinkedGameIds, fetchExpansionsForGame, upsertExpansions, updateExpansionOwnership, insertAccessory, deleteAccessory, updateAccessoryOfficial, fetchExpansionTotalSpent, fetchExpansionSpentByCurrency } from '../utils/db';
 import { fetchExpansions, fetchAccessories } from '../utils/bgg';
+import { supabase } from '../utils/supabase';
 import type { AccessoryInfo } from '../utils/bgg';
 
 const { Title } = Typography;
@@ -274,10 +275,11 @@ export default function Collection() {
     try {
       let dbExpansions = await fetchExpansionsForGame(game.id);
 
-      // Fetch BGG expansions if not yet cached
       const hasExpansionBgg = game.expansionBggIds && game.expansionBggIds.length > 0;
       const hasDbExpansions = dbExpansions.some((e) => e.itemType !== 'accessory');
+
       if (!hasDbExpansions && hasExpansionBgg) {
+        // First time: fetch from BGG and insert
         const bggData = await fetchExpansions(game.expansionBggIds!);
         const newExpansions = bggData.map((e) => ({
           userId: state.userId!,
@@ -295,6 +297,23 @@ export default function Collection() {
         }));
         await upsertExpansions(newExpansions, state.userId!, game.id);
         dbExpansions = await fetchExpansionsForGame(game.id);
+      } else if (hasDbExpansions && hasExpansionBgg) {
+        // Existing expansions: refresh images from BGG in background
+        fetchExpansions(game.expansionBggIds!).then(async (bggData) => {
+          const bggMap = new Map(bggData.map((e) => [e.bggId, e]));
+          let updated = false;
+          for (const exp of dbExpansions) {
+            const bgg = bggMap.get(exp.bggId);
+            if (bgg?.image && bgg.image !== exp.image) {
+              await supabase.from('owned_expansions').update({ image: bgg.image }).eq('id', exp.id);
+              exp.image = bgg.image;
+              updated = true;
+            }
+          }
+          if (updated) {
+            setExpansionMap((prev) => ({ ...prev, [game.id]: [...dbExpansions] }));
+          }
+        }).catch(() => {});
       }
 
       setExpansionMap((prev) => ({ ...prev, [game.id]: dbExpansions }));
