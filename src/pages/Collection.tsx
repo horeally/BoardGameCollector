@@ -15,6 +15,44 @@ import type { AccessoryInfo } from '../utils/bgg';
 
 const { Title } = Typography;
 
+function HoverImage({ url, size }: { url?: string; size: number }) {
+  const [show, setShow] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  const onEnter = () => {
+    timer.current = setTimeout(() => setShow(true), 1000);
+  };
+  const onLeave = () => {
+    if (timer.current) clearTimeout(timer.current);
+    setShow(false);
+  };
+
+  if (!url) {
+    return <div style={{ width: size, height: size, background: '#f0f0f0', borderRadius: 4, margin: '0 auto' }} />;
+  }
+
+  return (
+    <div style={{ position: 'relative', display: 'inline-block' }} onMouseEnter={onEnter} onMouseLeave={onLeave}>
+      <img src={url} alt="" style={{ width: size, height: size, objectFit: 'cover', borderRadius: 4 }} />
+      {show && (
+        <div style={{
+          position: 'fixed',
+          zIndex: 2000,
+          left: '50%',
+          top: '50%',
+          transform: 'translate(-50%, -50%)',
+          background: '#fff',
+          borderRadius: 8,
+          boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+          padding: 8,
+        }}>
+          <img src={url} alt="" style={{ maxWidth: 400, maxHeight: 400, borderRadius: 4 }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Collection() {
   const { state, dispatch } = useGameStore();
   const navigate = useNavigate();
@@ -398,12 +436,7 @@ export default function Collection() {
       key: 'image',
       width: 90,
       align: 'center' as const,
-      render: (url: string) =>
-        url ? (
-          <img src={url} alt="" style={{ width: 70, height: 70, objectFit: 'cover', borderRadius: 4 }} />
-        ) : (
-          <div style={{ width: 70, height: 70, background: '#f0f0f0', borderRadius: 4 }} />
-        ),
+      render: (url: string) => <HoverImage url={url} size={70} />,
     },
     {
       title: 'Name',
@@ -589,12 +622,7 @@ export default function Collection() {
       key: 'image',
       width: 90,
       align: 'center' as const,
-      render: (url: string) =>
-        url ? (
-          <img src={url} alt="" style={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 3 }} />
-        ) : (
-          <div style={{ width: 50, height: 50, background: '#f0f0f0', borderRadius: 3, margin: '0 auto' }} />
-        ),
+      render: (url: string) => <HoverImage url={url} size={50} />,
     },
     {
       title: 'Name',
