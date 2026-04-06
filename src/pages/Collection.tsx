@@ -298,22 +298,27 @@ export default function Collection() {
         await upsertExpansions(newExpansions, state.userId!, game.id);
         dbExpansions = await fetchExpansionsForGame(game.id);
       } else if (hasDbExpansions && hasExpansionBgg) {
-        // Existing expansions: refresh images from BGG in background
-        fetchExpansions(game.expansionBggIds!).then(async (bggData) => {
-          const bggMap = new Map(bggData.map((e) => [e.bggId, e]));
-          let updated = false;
-          for (const exp of dbExpansions) {
-            const bgg = bggMap.get(exp.bggId);
-            if (bgg?.image && bgg.image !== exp.image) {
-              await supabase.from('owned_expansions').update({ image: bgg.image }).eq('id', exp.id);
-              exp.image = bgg.image;
-              updated = true;
+        // Check if any expansion still has a thumbnail URL that needs upgrading
+        const needsImageUpdate = dbExpansions.some(
+          (e) => e.itemType !== 'accessory' && e.image && (e.image.includes('_t.') || e.image.includes('/thumb/'))
+        );
+        if (needsImageUpdate) {
+          fetchExpansions(game.expansionBggIds!).then(async (bggData) => {
+            const bggMap = new Map(bggData.map((e) => [e.bggId, e]));
+            let updated = false;
+            for (const exp of dbExpansions) {
+              const bgg = bggMap.get(exp.bggId);
+              if (bgg?.image && bgg.image !== exp.image) {
+                await supabase.from('owned_expansions').update({ image: bgg.image }).eq('id', exp.id);
+                exp.image = bgg.image;
+                updated = true;
+              }
             }
-          }
-          if (updated) {
-            setExpansionMap((prev) => ({ ...prev, [game.id]: [...dbExpansions] }));
-          }
-        }).catch(() => {});
+            if (updated) {
+              setExpansionMap((prev) => ({ ...prev, [game.id]: [...dbExpansions] }));
+            }
+          }).catch(() => {});
+        }
       }
 
       setExpansionMap((prev) => ({ ...prev, [game.id]: dbExpansions }));
