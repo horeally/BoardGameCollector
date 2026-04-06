@@ -3,12 +3,12 @@ import {
   Select, Space, Spin, Table, Tag, Typography, message,
 } from 'antd';
 import { DeleteOutlined, DollarOutlined, EditOutlined, LinkOutlined, SearchOutlined } from '@ant-design/icons';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { useGameStore } from '../store/gameStore';
-import { CATEGORIES, CATEGORY_COLORS, CURRENCY_SYMBOLS } from '../types';
+import { CATEGORIES, CATEGORY_COLORS, CURRENCY_SYMBOLS, toCNY } from '../types';
 import type { BoardGame, Currency, OwnedExpansion } from '../types';
 import { deleteGame, updateGame, updateLinkedGameIds, fetchExpansionsForGame, upsertExpansions, updateExpansionOwnership, insertAccessory, deleteAccessory, updateAccessoryOfficial, fetchExpansionTotalSpent, fetchExpansionSpentByCurrency } from '../utils/db';
 import { fetchExpansions, fetchAccessories } from '../utils/bgg';
@@ -100,6 +100,28 @@ export default function Collection() {
   const [sellForm] = Form.useForm();
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 50;
+  const [costByGame, setCostByGame] = useState<Record<string, { exp: number; acc: number }>>({});
+
+  // Fetch expansion/accessory costs for all games
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase
+        .from('owned_expansions')
+        .select('base_game_id, price, currency, item_type')
+        .eq('owned', true);
+      const map: Record<string, { exp: number; acc: number }> = {};
+      for (const r of data || []) {
+        const cny = toCNY(Number(r.price) || 0, r.currency || 'CNY');
+        if (!map[r.base_game_id]) map[r.base_game_id] = { exp: 0, acc: 0 };
+        if (r.item_type === 'accessory') {
+          map[r.base_game_id].acc += cny;
+        } else {
+          map[r.base_game_id].exp += cny;
+        }
+      }
+      setCostByGame(map);
+    })();
+  }, []);
   const [sorter, setSorter] = useState<{ field?: string; order?: 'ascend' | 'descend' }>({});
 
   // Linked versions: highlight + scroll
@@ -337,6 +359,19 @@ export default function Collection() {
       const [total, byCurrency] = await Promise.all([fetchExpansionTotalSpent(), fetchExpansionSpentByCurrency()]);
       dispatch({ type: 'SET_EXPANSION_SPENT', payload: total });
       dispatch({ type: 'SET_EXPANSION_SPENT_BY_CURRENCY', payload: byCurrency });
+      // Also refresh per-game costs
+      const { data } = await supabase
+        .from('owned_expansions')
+        .select('base_game_id, price, currency, item_type')
+        .eq('owned', true);
+      const map: Record<string, { exp: number; acc: number }> = {};
+      for (const r of data || []) {
+        const cny = toCNY(Number(r.price) || 0, r.currency || 'CNY');
+        if (!map[r.base_game_id]) map[r.base_game_id] = { exp: 0, acc: 0 };
+        if (r.item_type === 'accessory') map[r.base_game_id].acc += cny;
+        else map[r.base_game_id].exp += cny;
+      }
+      setCostByGame(map);
     } catch { /* ignore */ }
   };
 
@@ -573,9 +608,31 @@ export default function Collection() {
       key: 'price',
       width: 170,
       align: 'center' as const,
-      sorter: (a: BoardGame, b: BoardGame) => a.price - b.price,
-      render: (_: any, r: BoardGame) =>
-        `${CURRENCY_SYMBOLS[r.currency as Currency] || ''}${r.price}`,
+      sorter: (a: BoardGame, b: BoardGame) => {
+        const aCost = toCNY(a.price, a.currency) + (costByGame[a.id]?.exp || 0) + (costByGame[a.id]?.acc || 0);
+        const bCost = toCNY(b.price, b.currency) + (costByGame[b.id]?.exp || 0) + (costByGame[b.id]?.acc || 0);
+        return aCost - bCost;
+      },
+      render: (_: any, r: BoardGame) => {
+        const costs = costByGame[r.id];
+        const expCny = Math.round(costs?.exp || 0);
+        const accCny = Math.round(costs?.acc || 0);
+        const hasExtra = expCny > 0 || accCny > 0;
+        const baseCny = Math.round(toCNY(r.price, r.currency));
+        const total = baseCny + expCny + accCny;
+        if (!hasExtra) {
+          return `${CURRENCY_SYMBOLS[r.currency as Currency] || ''}${r.price}`;
+        }
+        const parts = [expCny > 0 ? `exp ¥${expCny}` : '', accCny > 0 ? `acc ¥${accCny}` : ''].filter(Boolean);
+        return (
+          <div>
+            <div>¥{total}</div>
+            <div style={{ fontSize: 11, color: '#999' }}>
+              base ¥{baseCny} + {parts.join(' + ')}
+            </div>
+          </div>
+        );
+      },
     },
     {
       title: 'Rating',
