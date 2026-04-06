@@ -15,7 +15,7 @@ import type { AccessoryInfo } from '../utils/bgg';
 
 const { Title } = Typography;
 
-function HoverImage({ url, size }: { url?: string; size: number }) {
+function HoverImage({ url, size, side = 'right' }: { url?: string; size: number; side?: 'left' | 'right' }) {
   const [show, setShow] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -31,6 +31,10 @@ function HoverImage({ url, size }: { url?: string; size: number }) {
     return <div style={{ width: size, height: size, background: '#f0f0f0', borderRadius: 4, margin: '0 auto' }} />;
   }
 
+  const popStyle = side === 'left'
+    ? { right: '100%', left: 'auto', marginRight: 8 }
+    : { left: '100%', marginLeft: 8 };
+
   return (
     <div style={{ position: 'relative', display: 'inline-block' }} onMouseEnter={onEnter} onMouseLeave={onLeave}>
       <img src={url} alt="" style={{ width: size, height: size, objectFit: 'cover', borderRadius: 4 }} />
@@ -38,9 +42,8 @@ function HoverImage({ url, size }: { url?: string; size: number }) {
         <div style={{
           position: 'absolute',
           zIndex: 2000,
-          left: '100%',
           top: 0,
-          marginLeft: 8,
+          ...popStyle,
           background: '#fff',
           borderRadius: 8,
           boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
@@ -926,7 +929,7 @@ export default function Collection() {
                 {bggAccessories.map((a) => (
                   <div key={a.bggId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f0f0f0' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {a.image && <img src={a.image} alt="" style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 3 }} />}
+                      {a.image ? <HoverImage url={a.image} size={32} side="left" /> : <div style={{ width: 32, height: 32, background: '#f0f0f0', borderRadius: 3 }} />}
                       <span style={{ fontSize: 13 }}>{a.name}</span>
                     </div>
                     <Button size="small" type="link" onClick={() => handleAddAccessoryFromBgg(a)}>Add</Button>
