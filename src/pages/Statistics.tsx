@@ -131,7 +131,7 @@ export default function Statistics() {
     return { name: g.name, totalCny: baseCny + expCny + accCny, baseCny, expCny, accCny };
   })
     .sort((a, b) => b.totalCny - a.totalCny)
-    .slice(0, 10);
+    .slice(0, 20);
 
   return (
     <div>
@@ -140,6 +140,7 @@ export default function Statistics() {
       <Row gutter={[16, 16]}>
         <Col xs={24} md={12}>
           <Card title="Category Distribution">
+           <div style={{ maxHeight: 400, overflow: 'auto' }}>
             {categoryData.map((item) => (
               <div key={item.name} style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
                 <span style={{ width: 150, flexShrink: 0, fontSize: 13 }}>{item.name}</span>
@@ -165,11 +166,13 @@ export default function Statistics() {
                 <span style={{ width: 40, textAlign: 'right' }}>{item.count}</span>
               </div>
             ))}
+           </div>
           </Card>
         </Col>
 
         <Col xs={24} md={12}>
           <Card title="Price Distribution (CNY)">
+           <div style={{ maxHeight: 400, overflow: 'auto' }}>
             {priceDistribution.map((item) => (
               <div key={item.range} style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
                 <span style={{ width: 60 }}>{item.range}</span>
@@ -195,11 +198,13 @@ export default function Statistics() {
                 <span style={{ width: 40, textAlign: 'right' }}>{item.count}</span>
               </div>
             ))}
+           </div>
           </Card>
         </Col>
 
         <Col xs={24} md={12}>
           <Card title="Monthly Spending (incl. Exp & Acc)">
+           <div style={{ maxHeight: 400, overflow: 'auto' }}>
             {monthlyData.length === 0 ? (
               <Empty description="No purchase date data" />
             ) : (
@@ -236,11 +241,13 @@ export default function Statistics() {
                 </div>
               ))
             )}
+           </div>
           </Card>
         </Col>
 
         <Col xs={24} md={12}>
           <Card title="Top Rated (My Ratings)">
+           <div style={{ maxHeight: 400, overflow: 'auto' }}>
             {topRated.length === 0 ? (
               <Empty description="No ratings yet" />
             ) : (
@@ -253,11 +260,13 @@ export default function Statistics() {
                 </div>
               ))
             )}
+           </div>
           </Card>
         </Col>
 
         <Col xs={24} md={12}>
           <Card title="Most Expensive (CNY, incl. Exp & Acc)">
+           <div style={{ maxHeight: 400, overflow: 'auto' }}>
             {mostExpensive.map((item, i) => {
               const parts = [
                 `base ¥${Math.round(item.baseCny)}`,
@@ -279,6 +288,7 @@ export default function Statistics() {
                 </div>
               );
             })}
+           </div>
           </Card>
         </Col>
       </Row>
