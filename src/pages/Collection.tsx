@@ -36,17 +36,17 @@ function HoverImage({ url, size }: { url?: string; size: number }) {
       <img src={url} alt="" style={{ width: size, height: size, objectFit: 'cover', borderRadius: 4 }} />
       {show && (
         <div style={{
-          position: 'fixed',
+          position: 'absolute',
           zIndex: 2000,
-          left: '50%',
-          top: '50%',
-          transform: 'translate(-50%, -50%)',
+          left: '100%',
+          top: 0,
+          marginLeft: 8,
           background: '#fff',
           borderRadius: 8,
           boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
-          padding: 8,
+          padding: 6,
         }}>
-          <img src={url} alt="" style={{ maxWidth: 400, maxHeight: 400, borderRadius: 4 }} />
+          <img src={url} alt="" style={{ display: 'block', borderRadius: 4 }} />
         </div>
       )}
     </div>
