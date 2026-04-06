@@ -4,6 +4,7 @@ import {
 } from 'antd';
 import { DeleteOutlined, DollarOutlined, EditOutlined, LinkOutlined, SearchOutlined } from '@ant-design/icons';
 import { useCallback, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { useGameStore } from '../store/gameStore';
@@ -69,10 +70,10 @@ function HoverImage({ url, size, side = 'right' }: { url?: string; size: number;
   return (
     <div ref={imgRef} style={{ display: 'inline-block' }} onMouseEnter={onEnter} onMouseLeave={onLeave}>
       <img src={url} alt="" style={{ width: size, height: size, objectFit: 'cover', borderRadius: 4 }} />
-      {show && (
+      {show && createPortal(
         <div ref={popRef} style={{
           position: 'fixed',
-          zIndex: 2000,
+          zIndex: 99999,
           opacity: 0,
           ...style,
           background: '#fff',
@@ -82,7 +83,8 @@ function HoverImage({ url, size, side = 'right' }: { url?: string; size: number;
           pointerEvents: 'none',
         }}>
           <img src={url} alt="" style={{ display: 'block', borderRadius: 4, maxWidth: '40vw', maxHeight: '70vh' }} />
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
