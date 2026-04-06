@@ -17,25 +17,48 @@ const { Title } = Typography;
 
 function HoverImage({ url, size, side = 'right' }: { url?: string; size: number; side?: 'left' | 'right' }) {
   const [show, setShow] = useState(false);
-  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
+  const [style, setStyle] = useState<React.CSSProperties>({});
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const imgRef = useRef<HTMLDivElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
 
   const onEnter = () => {
     timer.current = setTimeout(() => {
-      if (imgRef.current) {
-        const rect = imgRef.current.getBoundingClientRect();
-        setPos({
-          top: rect.top,
-          left: side === 'left' ? rect.left : rect.right + 8,
-        });
-      }
       setShow(true);
+      // Position after render so we can measure popup size
+      requestAnimationFrame(() => {
+        if (!imgRef.current || !popRef.current) return;
+        const rect = imgRef.current.getBoundingClientRect();
+        const pop = popRef.current.getBoundingClientRect();
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const pad = 8;
+
+        // Horizontal: prefer specified side, flip if no room
+        let left: number;
+        if (side === 'left') {
+          left = rect.left - pop.width - pad;
+          if (left < pad) left = rect.right + pad;
+        } else {
+          left = rect.right + pad;
+          if (left + pop.width > vw - pad) left = rect.left - pop.width - pad;
+        }
+        // Keep within horizontal bounds
+        left = Math.max(pad, Math.min(left, vw - pop.width - pad));
+
+        // Vertical: align top with thumbnail, clamp to viewport
+        let top = rect.top;
+        if (top + pop.height > vh - pad) top = vh - pop.height - pad;
+        top = Math.max(pad, top);
+
+        setStyle({ top, left, opacity: 1 });
+      });
     }, 1000);
   };
   const onLeave = () => {
     if (timer.current) clearTimeout(timer.current);
     setShow(false);
+    setStyle({});
   };
 
   if (!url) {
@@ -45,21 +68,19 @@ function HoverImage({ url, size, side = 'right' }: { url?: string; size: number;
   return (
     <div ref={imgRef} style={{ display: 'inline-block' }} onMouseEnter={onEnter} onMouseLeave={onLeave}>
       <img src={url} alt="" style={{ width: size, height: size, objectFit: 'cover', borderRadius: 4 }} />
-      {show && pos && (
-        <div style={{
+      {show && (
+        <div ref={popRef} style={{
           position: 'fixed',
           zIndex: 2000,
-          top: pos.top,
-          ...(side === 'left'
-            ? { right: window.innerWidth - pos.left + 8 }
-            : { left: pos.left }),
+          opacity: 0,
+          ...style,
           background: '#fff',
           borderRadius: 8,
           boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
           padding: 6,
           pointerEvents: 'none',
         }}>
-          <img src={url} alt="" style={{ display: 'block', borderRadius: 4, maxWidth: '40vw', maxHeight: '40vh' }} />
+          <img src={url} alt="" style={{ display: 'block', borderRadius: 4, maxWidth: '40vw', maxHeight: '70vh' }} />
         </div>
       )}
     </div>
