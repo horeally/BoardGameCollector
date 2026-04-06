@@ -59,7 +59,7 @@ function HoverImage({ url, size, side = 'right' }: { url?: string; size: number;
           padding: 6,
           pointerEvents: 'none',
         }}>
-          <img src={url} alt="" style={{ display: 'block', borderRadius: 4 }} />
+          <img src={url} alt="" style={{ display: 'block', borderRadius: 4, maxWidth: 300, maxHeight: 300 }} />
         </div>
       )}
     </div>
