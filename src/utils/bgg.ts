@@ -178,7 +178,7 @@ export async function fetchExpansions(bggIds: number[]): Promise<ExpansionInfo[]
       results.push({
         bggId: Number(item['@_id']),
         name: primaryName,
-        image: item.thumbnail || item.image,
+        image: item.image || item.thumbnail,
         yearPublished: item.yearpublished?.['@_value'] || undefined,
         bggRating: toNum(stats?.average?.['@_value']),
         bggBayesRating: toNum(stats?.bayesaverage?.['@_value']),
@@ -224,7 +224,7 @@ export async function fetchAccessories(bggIds: number[]): Promise<AccessoryInfo[
       results.push({
         bggId: Number(item['@_id']),
         name: primaryName,
-        image: item.thumbnail || item.image,
+        image: item.image || item.thumbnail,
       });
     }
   }
