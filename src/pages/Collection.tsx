@@ -17,10 +17,21 @@ const { Title } = Typography;
 
 function HoverImage({ url, size, side = 'right' }: { url?: string; size: number; side?: 'left' | 'right' }) {
   const [show, setShow] = useState(false);
+  const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const imgRef = useRef<HTMLDivElement>(null);
 
   const onEnter = () => {
-    timer.current = setTimeout(() => setShow(true), 1000);
+    timer.current = setTimeout(() => {
+      if (imgRef.current) {
+        const rect = imgRef.current.getBoundingClientRect();
+        setPos({
+          top: rect.top,
+          left: side === 'left' ? rect.left : rect.right + 8,
+        });
+      }
+      setShow(true);
+    }, 1000);
   };
   const onLeave = () => {
     if (timer.current) clearTimeout(timer.current);
@@ -31,23 +42,22 @@ function HoverImage({ url, size, side = 'right' }: { url?: string; size: number;
     return <div style={{ width: size, height: size, background: '#f0f0f0', borderRadius: 4, margin: '0 auto' }} />;
   }
 
-  const popStyle = side === 'left'
-    ? { right: '100%', left: 'auto', marginRight: 8 }
-    : { left: '100%', marginLeft: 8 };
-
   return (
-    <div style={{ position: 'relative', display: 'inline-block' }} onMouseEnter={onEnter} onMouseLeave={onLeave}>
+    <div ref={imgRef} style={{ display: 'inline-block' }} onMouseEnter={onEnter} onMouseLeave={onLeave}>
       <img src={url} alt="" style={{ width: size, height: size, objectFit: 'cover', borderRadius: 4 }} />
-      {show && (
+      {show && pos && (
         <div style={{
-          position: 'absolute',
+          position: 'fixed',
           zIndex: 2000,
-          top: 0,
-          ...popStyle,
+          top: pos.top,
+          ...(side === 'left'
+            ? { right: window.innerWidth - pos.left + 8 }
+            : { left: pos.left }),
           background: '#fff',
           borderRadius: 8,
           boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
           padding: 6,
+          pointerEvents: 'none',
         }}>
           <img src={url} alt="" style={{ display: 'block', borderRadius: 4 }} />
         </div>
