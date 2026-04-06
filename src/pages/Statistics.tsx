@@ -140,7 +140,7 @@ export default function Statistics() {
 
       <Row gutter={[16, 16]}>
         <Col xs={24} md={12}>
-          <Card title="Category Distribution">
+          <Card title="Category Distribution" style={{ height: '100%' }}>
            <div style={{ maxHeight: 400, overflowY: 'auto', overflowX: 'hidden' }}>
             {categoryData.map((item) => (
               <div key={item.name} style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
@@ -172,7 +172,7 @@ export default function Statistics() {
         </Col>
 
         <Col xs={24} md={12}>
-          <Card title="Price Distribution (CNY)">
+          <Card title="Price Distribution (CNY)" style={{ height: '100%' }}>
            <div style={{ maxHeight: 400, overflowY: 'auto', overflowX: 'hidden' }}>
             {priceDistribution.map((item) => (
               <div key={item.range} style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
@@ -204,7 +204,7 @@ export default function Statistics() {
         </Col>
 
         <Col xs={24} md={12}>
-          <Card title="Monthly Spending (incl. Exp & Acc)">
+          <Card title="Monthly Spending (incl. Exp & Acc)" style={{ height: '100%' }}>
            <div style={{ maxHeight: 400, overflowY: 'auto', overflowX: 'hidden' }}>
             {monthlyData.length === 0 ? (
               <Empty description="No purchase date data" />
@@ -247,7 +247,7 @@ export default function Statistics() {
         </Col>
 
         <Col xs={24} md={12}>
-          <Card title="Top Rated (My Ratings)">
+          <Card title="Top Rated (My Ratings)" style={{ height: '100%' }}>
            <div style={{ maxHeight: 400, overflowY: 'auto', overflowX: 'hidden' }}>
             {topRated.length === 0 ? (
               <Empty description="No ratings yet" />
@@ -266,7 +266,7 @@ export default function Statistics() {
         </Col>
 
         <Col xs={24} md={12}>
-          <Card title="Most Expensive (CNY, incl. Exp & Acc)">
+          <Card title="Most Expensive (CNY, incl. Exp & Acc)" style={{ height: '100%' }}>
            <div style={{ maxHeight: 400, overflowY: 'auto', overflowX: 'hidden' }}>
             {mostExpensive.map((item, i) => {
               const parts = [
