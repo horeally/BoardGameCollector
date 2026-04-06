@@ -11,22 +11,41 @@ function decodeEntities(str: string): string {
   return el.value;
 }
 
-export async function searchBGG(query: string): Promise<BGGSearchResult[]> {
-  if (!query.trim()) return [];
-
-  const res = await fetch(`${BGG_API}/search?query=${encodeURIComponent(query)}&type=boardgame,boardgameexpansion`);
-  const xml = await res.text();
-  const data = parser.parse(xml);
-
+function parseBGGSearchItems(data: any): BGGSearchResult[] {
   const items = data?.items?.item;
   if (!items) return [];
-
   const list = Array.isArray(items) ? items : [items];
-  const results = list.map((item: any) => ({
+  return list.map((item: any) => ({
     id: Number(item['@_id']),
     name: decodeEntities(item.name?.['@_value'] || (Array.isArray(item.name) ? item.name[0]?.['@_value'] : '')),
     yearPublished: item.yearpublished?.['@_value'],
   }));
+}
+
+export async function searchBGG(query: string): Promise<BGGSearchResult[]> {
+  if (!query.trim()) return [];
+
+  const encoded = encodeURIComponent(query);
+  const type = 'boardgame,boardgameexpansion';
+
+  // Send exact + fuzzy search in parallel, merge results
+  const [exactRes, fuzzyRes] = await Promise.all([
+    fetch(`${BGG_API}/search?query=${encoded}&type=${type}&exact=1`).then((r) => r.text()),
+    fetch(`${BGG_API}/search?query=${encoded}&type=${type}`).then((r) => r.text()),
+  ]);
+
+  const exactItems = parseBGGSearchItems(parser.parse(exactRes));
+  const fuzzyItems = parseBGGSearchItems(parser.parse(fuzzyRes));
+
+  // Merge: exact first, then fuzzy (deduplicate by id)
+  const seen = new Set<number>();
+  const results: BGGSearchResult[] = [];
+  for (const item of [...exactItems, ...fuzzyItems]) {
+    if (!seen.has(item.id)) {
+      seen.add(item.id);
+      results.push(item);
+    }
+  }
 
   const q = query.toLowerCase().trim();
   // Word boundary pattern: query appears as a standalone word
