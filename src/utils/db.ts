@@ -266,12 +266,15 @@ export async function insertAccessory(
   price?: number,
   currency?: string,
   purchaseDate?: string,
+  image?: string,
+  bggId?: number,
 ): Promise<OwnedExpansion> {
   const row = {
     user_id: userId,
     base_game_id: baseGameId,
-    bgg_id: 0,
+    bgg_id: bggId || 0,
     name,
+    image: image || null,
     owned: true,
     item_type: 'accessory',
     price: price || null,

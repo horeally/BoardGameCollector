@@ -341,7 +341,7 @@ export default function Collection() {
   const handleAddAccessoryFromBgg = async (info: AccessoryInfo) => {
     if (!accModalGame) return;
     try {
-      const acc = await insertAccessory(accModalGame.id, state.userId!, info.name, undefined, accModalGame.currency, accModalGame.purchaseDate);
+      const acc = await insertAccessory(accModalGame.id, state.userId!, info.name, undefined, accModalGame.currency, accModalGame.purchaseDate, info.image, info.bggId);
       setExpansionMap((prev) => ({
         ...prev,
         [accModalGame.id]: [...(prev[accModalGame.id] || []), acc],
