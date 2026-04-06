@@ -10,7 +10,8 @@ import { useGameStore } from '../store/gameStore';
 import { CATEGORIES, CATEGORY_COLORS, CURRENCY_SYMBOLS } from '../types';
 import type { BoardGame, Currency, OwnedExpansion } from '../types';
 import { deleteGame, updateGame, updateLinkedGameIds, fetchExpansionsForGame, upsertExpansions, updateExpansionOwnership, insertAccessory, deleteAccessory, updateAccessoryOfficial, fetchExpansionTotalSpent, fetchExpansionSpentByCurrency } from '../utils/db';
-import { fetchExpansions } from '../utils/bgg';
+import { fetchExpansions, fetchAccessories } from '../utils/bgg';
+import type { AccessoryInfo } from '../utils/bgg';
 
 const { Title } = Typography;
 
@@ -294,15 +295,59 @@ export default function Collection() {
     }
   };
 
-  const handleAddAccessory = async (game: BoardGame) => {
-    const name = window.prompt('Accessory name:');
-    if (!name?.trim()) return;
+  // Add Accessory modal state
+  const [accModalOpen, setAccModalOpen] = useState(false);
+  const [accModalGame, setAccModalGame] = useState<BoardGame | null>(null);
+  const [accManualName, setAccManualName] = useState('');
+  const [bggAccessories, setBggAccessories] = useState<AccessoryInfo[]>([]);
+  const [loadingBggAcc, setLoadingBggAcc] = useState(false);
+
+  const openAccModal = async (game: BoardGame) => {
+    setAccModalGame(game);
+    setAccManualName('');
+    setBggAccessories([]);
+    setAccModalOpen(true);
+    // Fetch BGG accessories if available
+    if (game.accessoryBggIds?.length) {
+      setLoadingBggAcc(true);
+      try {
+        const data = await fetchAccessories(game.accessoryBggIds);
+        // Filter out already added ones
+        const existing = (expansionMap[game.id] || []).map((e) => e.bggId);
+        setBggAccessories(data.filter((a) => !existing.includes(a.bggId)));
+      } catch {
+        // ignore
+      } finally {
+        setLoadingBggAcc(false);
+      }
+    }
+  };
+
+  const handleAddAccessoryManual = async () => {
+    if (!accModalGame || !accManualName.trim()) return;
     try {
-      const acc = await insertAccessory(game.id, state.userId!, name.trim(), undefined, game.currency, game.purchaseDate);
+      const acc = await insertAccessory(accModalGame.id, state.userId!, accManualName.trim(), undefined, accModalGame.currency, accModalGame.purchaseDate);
       setExpansionMap((prev) => ({
         ...prev,
-        [game.id]: [...(prev[game.id] || []), acc],
+        [accModalGame.id]: [...(prev[accModalGame.id] || []), acc],
       }));
+      setAccManualName('');
+      message.success('Accessory added');
+    } catch {
+      message.error('Failed to add accessory');
+    }
+  };
+
+  const handleAddAccessoryFromBgg = async (info: AccessoryInfo) => {
+    if (!accModalGame) return;
+    try {
+      const acc = await insertAccessory(accModalGame.id, state.userId!, info.name, undefined, accModalGame.currency, accModalGame.purchaseDate);
+      setExpansionMap((prev) => ({
+        ...prev,
+        [accModalGame.id]: [...(prev[accModalGame.id] || []), acc],
+      }));
+      // Remove from list
+      setBggAccessories((prev) => prev.filter((a) => a.bggId !== info.bggId));
       message.success('Accessory added');
     } catch {
       message.error('Failed to add accessory');
@@ -749,7 +794,7 @@ export default function Collection() {
                   type="dashed"
                   size="small"
                   style={{ marginTop: 8 }}
-                  onClick={() => handleAddAccessory(record)}
+                  onClick={() => openAccModal(record)}
                 >
                   + Add Accessory
                 </Button>
@@ -821,6 +866,50 @@ export default function Collection() {
               value: g.id,
             }))}
         />
+      </Modal>
+
+      <Modal
+        title={`Add Accessory: ${accModalGame?.name || ''}`}
+        open={accModalOpen}
+        onCancel={() => { setAccModalOpen(false); setAccModalGame(null); }}
+        footer={null}
+      >
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontWeight: 500, marginBottom: 8 }}>Manual Input</div>
+          <Space.Compact style={{ width: '100%' }}>
+            <Input
+              placeholder="Accessory name..."
+              value={accManualName}
+              onChange={(e) => setAccManualName(e.target.value)}
+              onPressEnter={handleAddAccessoryManual}
+            />
+            <Button type="primary" onClick={handleAddAccessoryManual} disabled={!accManualName.trim()}>
+              Add
+            </Button>
+          </Space.Compact>
+        </div>
+        {accModalGame?.accessoryBggIds && accModalGame.accessoryBggIds.length > 0 && (
+          <div>
+            <div style={{ fontWeight: 500, marginBottom: 8 }}>BGG Accessories</div>
+            {loadingBggAcc ? (
+              <div style={{ textAlign: 'center', padding: 16 }}><Spin /></div>
+            ) : bggAccessories.length > 0 ? (
+              <div style={{ maxHeight: 300, overflow: 'auto' }}>
+                {bggAccessories.map((a) => (
+                  <div key={a.bggId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f0f0f0' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      {a.image && <img src={a.image} alt="" style={{ width: 32, height: 32, objectFit: 'cover', borderRadius: 3 }} />}
+                      <span style={{ fontSize: 13 }}>{a.name}</span>
+                    </div>
+                    <Button size="small" type="link" onClick={() => handleAddAccessoryFromBgg(a)}>Add</Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{ color: '#999', fontSize: 13 }}>All BGG accessories already added</div>
+            )}
+          </div>
+        )}
       </Modal>
 
       <style>{`

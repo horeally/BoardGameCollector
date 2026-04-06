@@ -142,6 +142,7 @@ export default function App() {
             image: detail.image ?? game.image,
             relatedGames: detail.relatedGames ?? game.relatedGames,
             expansionBggIds: detail.expansionIds?.length ? detail.expansionIds : game.expansionBggIds,
+            accessoryBggIds: detail.accessoryIds?.length ? detail.accessoryIds : game.accessoryBggIds,
           };
           await updateGame(updatedGame, state.userId!);
           dispatch({ type: 'UPDATE_GAME', payload: updatedGame });

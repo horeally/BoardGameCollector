@@ -21,6 +21,7 @@ export interface BoardGame {
   weight?: number;
   relatedGames?: string;
   expansionBggIds?: number[];
+  accessoryBggIds?: number[];
   linkedGameIds?: string[];
   kickstarter?: boolean;
   image?: string;
@@ -59,6 +60,7 @@ export interface BGGGameDetail {
   gameType?: 'base' | 'expansion' | 'accessory';
   relatedGames?: string;
   expansionIds?: number[];
+  accessoryIds?: number[];
 }
 
 export interface ExpansionInfo {

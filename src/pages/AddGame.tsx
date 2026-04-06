@@ -79,6 +79,7 @@ export default function AddGame() {
           weight: detail.weight,
           relatedGames: detail.relatedGames,
           expansionBggIds: detail.expansionIds,
+          accessoryBggIds: detail.accessoryIds,
           category: detail.category,
           gameType: detail.gameType,
         });
@@ -120,6 +121,7 @@ export default function AddGame() {
           weight: detail.weight,
           relatedGames: detail.relatedGames,
           expansionBggIds: detail.expansionIds,
+          accessoryBggIds: detail.accessoryIds,
           category: detail.category,
           gameType: detail.gameType,
         });
@@ -157,6 +159,7 @@ export default function AddGame() {
       weight: values.weight,
       relatedGames: values.relatedGames,
       expansionBggIds: values.expansionBggIds,
+      accessoryBggIds: values.accessoryBggIds,
       linkedGameIds: editGame?.linkedGameIds,
       image: values.image,
       notes: values.notes,
@@ -393,6 +396,9 @@ export default function AddGame() {
           <Input />
         </Form.Item>
         <Form.Item name="expansionBggIds" hidden>
+          <Input />
+        </Form.Item>
+        <Form.Item name="accessoryBggIds" hidden>
           <Input />
         </Form.Item>
 

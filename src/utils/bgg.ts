@@ -116,6 +116,7 @@ export async function getBGGDetail(id: number): Promise<BGGGameDetail | null> {
   const publishers = getLinks('boardgamepublisher');
   const expansions = getLinks('boardgameexpansion');
   const expansionIds = getLinkIds('boardgameexpansion');
+  const accessoryIds = getLinkIds('boardgameaccessory');
 
   const stats = item.statistics?.ratings;
 
@@ -138,6 +139,7 @@ export async function getBGGDetail(id: number): Promise<BGGGameDetail | null> {
     weight: toNum(stats?.averageweight?.['@_value']),
     relatedGames: expansions.join(', ') || undefined,
     expansionIds,
+    accessoryIds: accessoryIds.length ? accessoryIds : undefined,
   };
 }
 
@@ -183,6 +185,46 @@ export async function fetchExpansions(bggIds: number[]): Promise<ExpansionInfo[]
         bggRank: parseRank(stats),
         weight: toNum(stats?.averageweight?.['@_value']),
         designer: designers.join(', ') || undefined,
+      });
+    }
+  }
+
+  return results;
+}
+
+// Fetch accessory details in batch
+export interface AccessoryInfo {
+  bggId: number;
+  name: string;
+  image?: string;
+}
+
+export async function fetchAccessories(bggIds: number[]): Promise<AccessoryInfo[]> {
+  if (bggIds.length === 0) return [];
+
+  const results: AccessoryInfo[] = [];
+  const chunks: number[][] = [];
+  for (let i = 0; i < bggIds.length; i += 20) {
+    chunks.push(bggIds.slice(i, i + 20));
+  }
+
+  for (const chunk of chunks) {
+    const ids = chunk.join(',');
+    const res = await fetch(`${BGG_API}/thing?id=${ids}&type=boardgameaccessory`);
+    const xml = await res.text();
+    const data = parser.parse(xml);
+
+    const items = data?.items?.item;
+    if (!items) continue;
+
+    const list = Array.isArray(items) ? items : [items];
+    for (const item of list) {
+      const names = Array.isArray(item.name) ? item.name : [item.name];
+      const primaryName = decodeEntities(names.find((n: any) => n['@_type'] === 'primary')?.['@_value'] || '');
+      results.push({
+        bggId: Number(item['@_id']),
+        name: primaryName,
+        image: item.thumbnail || item.image,
       });
     }
   }
