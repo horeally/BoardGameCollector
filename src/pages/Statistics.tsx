@@ -98,11 +98,12 @@ export default function Statistics() {
 
   // Price distribution - CNY equivalent (games + expansions)
   const priceRanges = [
-    { label: '0-50', min: 0, max: 50 },
-    { label: '50-100', min: 50, max: 100 },
+    { label: '0-100', min: 0, max: 100 },
     { label: '100-200', min: 100, max: 200 },
     { label: '200-500', min: 200, max: 500 },
-    { label: '500+', min: 500, max: Infinity },
+    { label: '500-1000', min: 500, max: 1000 },
+    { label: '1000-2000', min: 1000, max: 2000 },
+    { label: '2000+', min: 2000, max: Infinity },
   ];
   const priceDistribution = priceRanges.map((r) => ({
     range: r.label,
