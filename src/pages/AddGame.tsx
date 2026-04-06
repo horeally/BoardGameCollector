@@ -1,8 +1,8 @@
 import {
   Button, Card, Checkbox, Col, DatePicker, Form, Input, InputNumber, List,
-  Row, Select, Spin, Typography, message,
+  Row, Select, Space, Spin, Typography, message,
 } from 'antd';
-import { CopyOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { CopyOutlined, NumberOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -23,6 +23,7 @@ export default function AddGame() {
 
   const [form] = Form.useForm();
   const [bggQuery, setBggQuery] = useState('');
+  const [bggIdInput, setBggIdInput] = useState('');
   const [bggResults, setBggResults] = useState<BGGSearchResult[]>([]);
   const [bggLoading, setBggLoading] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -54,6 +55,50 @@ export default function AddGame() {
         setBggLoading(false);
       }
     }, 500);
+  };
+
+  const handleBGGIdLoad = async () => {
+    const id = Number(bggIdInput.trim());
+    if (!id || isNaN(id)) {
+      message.warning('Please enter a valid BGG ID number');
+      return;
+    }
+    setBggLoading(true);
+    try {
+      const detail = await getBGGDetail(id);
+      if (detail) {
+        form.setFieldsValue({
+          nameEn: detail.name,
+          players: detail.minPlayers && detail.maxPlayers
+            ? `${detail.minPlayers}-${detail.maxPlayers}`
+            : undefined,
+          playTime: detail.playTime,
+          yearPublished: detail.yearPublished,
+          designer: detail.designer,
+          artist: detail.artist,
+          publisher: detail.publisher,
+          image: detail.image,
+          bggRating: detail.bggRating,
+          bggBayesRating: detail.bggBayesRating,
+          bggRank: detail.bggRank,
+          bggId: detail.id,
+          weight: detail.weight,
+          relatedGames: detail.relatedGames,
+          expansionBggIds: detail.expansionIds,
+          accessoryBggIds: detail.accessoryIds,
+          category: detail.category,
+          gameType: detail.gameType,
+        });
+        message.success(`Loaded: ${detail.name}`);
+        setBggIdInput('');
+      } else {
+        message.error('Game not found on BGG');
+      }
+    } catch {
+      message.error('Failed to load BGG details');
+    } finally {
+      setBggLoading(false);
+    }
   };
 
   const handleBGGSelect = async (item: BGGSearchResult) => {
@@ -200,13 +245,27 @@ export default function AddGame() {
             </Button>
           )}
         </div>
-        <Input
-          placeholder="Search BoardGameGeek..."
-          prefix={<SearchOutlined />}
-          value={bggQuery}
-          onChange={(e) => handleBGGSearch(e.target.value)}
-          allowClear
-        />
+        <Space.Compact style={{ width: '100%', marginBottom: 8 }}>
+          <Input
+            placeholder="Search BoardGameGeek..."
+            prefix={<SearchOutlined />}
+            value={bggQuery}
+            onChange={(e) => handleBGGSearch(e.target.value)}
+            allowClear
+            style={{ flex: 1 }}
+          />
+        </Space.Compact>
+        <Space.Compact style={{ width: '100%' }}>
+          <Input
+            placeholder="Or enter BGG ID (e.g. 12 for Ra)"
+            prefix={<NumberOutlined />}
+            value={bggIdInput}
+            onChange={(e) => setBggIdInput(e.target.value)}
+            onPressEnter={handleBGGIdLoad}
+            style={{ flex: 1 }}
+          />
+          <Button onClick={handleBGGIdLoad} loading={bggLoading}>Load</Button>
+        </Space.Compact>
         {bggLoading && <Spin style={{ marginTop: 8 }} />}
         {bggResults.length > 0 && (
           <List
