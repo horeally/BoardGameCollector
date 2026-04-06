@@ -77,6 +77,7 @@ export default function App() {
   const [state, dispatch] = useReducer(gameReducer, initialState);
   const [authReady, setAuthReady] = useState(false);
   const [refreshingAll, setRefreshingAll] = useState(false);
+  const [refreshProgress, setRefreshProgress] = useState({ current: 0, total: 0 });
 
   // Listen for auth state changes
   useEffect(() => {
@@ -122,8 +123,11 @@ export default function App() {
       return;
     }
     setRefreshingAll(true);
+    setRefreshProgress({ current: 0, total: gamesWithBgg.length });
     let updated = 0;
-    for (const game of gamesWithBgg) {
+    for (let i = 0; i < gamesWithBgg.length; i++) {
+      const game = gamesWithBgg[i];
+      setRefreshProgress({ current: i + 1, total: gamesWithBgg.length });
       try {
         const detail = await getBGGDetail(game.bggId!);
         if (detail) {
@@ -203,7 +207,11 @@ export default function App() {
     <ConfigProvider theme={{ token: { colorPrimary: '#1677ff' } }}>
       <GameContext.Provider value={{ state, dispatch }}>
         <div className="top-actions" style={{ position: 'fixed', top: 12, right: 12, zIndex: 1000, display: 'flex', gap: 6 }}>
-          <Button icon={<ReloadOutlined />} size="small" loading={refreshingAll} onClick={handleRefreshAll}><span className="btn-text">Refresh BGG</span></Button>
+          <Button icon={<ReloadOutlined />} size="small" loading={refreshingAll} onClick={handleRefreshAll}>
+            <span className="btn-text">
+              {refreshingAll ? `${Math.round((refreshProgress.current / refreshProgress.total) * 100)}%` : 'Refresh BGG'}
+            </span>
+          </Button>
           <Button icon={<ExportOutlined />} size="small" onClick={handleExport}><span className="btn-text">Export</span></Button>
           <Button icon={<LockOutlined />} size="small" onClick={() => setPwModalOpen(true)}><span className="btn-text">Password</span></Button>
           <Button icon={<LogoutOutlined />} size="small" onClick={handleLogout}><span className="btn-text">Logout</span></Button>
