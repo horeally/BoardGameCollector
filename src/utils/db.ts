@@ -7,7 +7,7 @@ function toGame(row: any): BoardGame {
     id: row.id,
     name: row.name,
     nameEn: row.name_en,
-    price: Number(row.price),
+    price: row.price != null ? Number(row.price) : null,
     currency: row.currency,
     purchaseDate: row.purchase_date || '',
     category: row.category,
