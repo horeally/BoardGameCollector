@@ -184,7 +184,7 @@ export default function AddGame() {
       id: editGame?.id || crypto.randomUUID(),
       name: values.name,
       nameEn: values.nameEn,
-      price: values.price || 0,
+      price: values.price ?? null,
       currency: values.currency || 'CNY',
       purchaseDate: values.purchaseDate ? values.purchaseDate.format('YYYY-MM-DD') : '',
       category: values.category || 'Other',
@@ -329,7 +329,7 @@ export default function AddGame() {
 
         <Row gutter={16}>
           <Col span={6}>
-            <Form.Item name="price" label="Price" rules={[{ required: true, message: 'Required' }]}>
+            <Form.Item name="price" label="Price">
               <InputNumber style={{ width: '100%' }} min={0} />
             </Form.Item>
           </Col>

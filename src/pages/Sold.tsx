@@ -72,7 +72,7 @@ export default function Sold() {
   }, [soldGameIds.join(',')]);
 
   const gameCostCny = (g: BoardGame) => {
-    const base = toCNY(g.price, g.currency);
+    const base = toCNY(g.price || 0, g.currency);
     const costs = costByGame[g.id];
     return base + (costs?.exp || 0) + (costs?.acc || 0);
   };
@@ -81,7 +81,7 @@ export default function Sold() {
   const soldByCurrency: Record<string, number> = {};
   for (const g of soldGames) {
     const bc = g.currency || 'CNY';
-    boughtByCurrency[bc] = (boughtByCurrency[bc] || 0) + g.price;
+    boughtByCurrency[bc] = (boughtByCurrency[bc] || 0) + (g.price || 0);
     const costs = costByGame[g.id];
     if (costs) {
       for (const [c, amount] of Object.entries(costs.expByCurrency)) {
@@ -148,7 +148,7 @@ export default function Sold() {
       key: 'buyPrice',
       width: 150,
       render: (_: any, r: BoardGame) => {
-        const baseCny = Math.round(toCNY(r.price, r.currency));
+        const baseCny = Math.round(toCNY(r.price || 0, r.currency));
         const costs = costByGame[r.id];
         const expCny = Math.round(costs?.exp || 0);
         const accCny = Math.round(costs?.acc || 0);

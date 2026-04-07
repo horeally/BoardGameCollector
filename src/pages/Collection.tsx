@@ -214,7 +214,7 @@ export default function Collection() {
   const sorterFns: Record<string, (a: BoardGame, b: BoardGame) => number> = {
     bggRank: (a, b) => (a.bggRank || 99999) - (b.bggRank || 99999),
     name: (a, b) => a.name.localeCompare(b.name),
-    price: (a, b) => a.price - b.price,
+    price: (a, b) => (a.price || 0) - (b.price || 0),
     rating: (a, b) => (a.rating || 0) - (b.rating || 0),
     bggRating: (a, b) => (a.bggRating || 0) - (b.bggRating || 0),
     weight: (a, b) => (a.weight || 0) - (b.weight || 0),
@@ -609,16 +609,17 @@ export default function Collection() {
       width: 170,
       align: 'center' as const,
       sorter: (a: BoardGame, b: BoardGame) => {
-        const aCost = toCNY(a.price, a.currency) + (costByGame[a.id]?.exp || 0) + (costByGame[a.id]?.acc || 0);
-        const bCost = toCNY(b.price, b.currency) + (costByGame[b.id]?.exp || 0) + (costByGame[b.id]?.acc || 0);
+        const aCost = toCNY(a.price || 0, a.currency) + (costByGame[a.id]?.exp || 0) + (costByGame[a.id]?.acc || 0);
+        const bCost = toCNY(b.price || 0, b.currency) + (costByGame[b.id]?.exp || 0) + (costByGame[b.id]?.acc || 0);
         return aCost - bCost;
       },
       render: (_: any, r: BoardGame) => {
+        if (r.price == null) return '-';
         const costs = costByGame[r.id];
         const expCny = Math.round(costs?.exp || 0);
         const accCny = Math.round(costs?.acc || 0);
         const hasExtra = expCny > 0 || accCny > 0;
-        const baseCny = Math.round(toCNY(r.price, r.currency));
+        const baseCny = Math.round(toCNY(r.price || 0, r.currency));
         const total = baseCny + expCny + accCny;
         if (!hasExtra) {
           return `${CURRENCY_SYMBOLS[r.currency as Currency] || ''}${r.price}`;

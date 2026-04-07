@@ -2,7 +2,7 @@ export interface BoardGame {
   id: string;
   name: string;
   nameEn?: string;
-  price: number;
+  price: number | null;
   currency: string;
   purchaseDate: string;
   category: string;

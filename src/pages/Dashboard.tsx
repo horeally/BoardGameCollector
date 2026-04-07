@@ -59,8 +59,8 @@ export default function Dashboard() {
     })();
   }, []);
 
-  const totalGames = ownedGames.length;
-  const gameSpentByCurrency = groupByCurrency(ownedGames.map((g) => ({ price: g.price, currency: g.currency })));
+  const totalGames = ownedGames.filter((g) => g.price != null).length;
+  const gameSpentByCurrency = groupByCurrency(ownedGames.filter((g) => g.price != null).map((g) => ({ price: g.price!, currency: g.currency })));
 
   // Merge game + expansion spending by currency
   const totalSpentByCurrency: Record<string, number> = { ...gameSpentByCurrency };
@@ -69,7 +69,7 @@ export default function Dashboard() {
   }
 
   const thisMonth = ownedGames.filter(
-    (g) => dayjs(g.purchaseDate).format('YYYY-MM') === dayjs().format('YYYY-MM')
+    (g) => g.price != null && dayjs(g.purchaseDate).format('YYYY-MM') === dayjs().format('YYYY-MM')
   ).length;
 
   const recentGames = [...ownedGames]

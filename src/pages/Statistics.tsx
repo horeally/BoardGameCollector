@@ -53,7 +53,7 @@ export default function Statistics() {
 
   // Combine games + owned expansions/accessories as spending items
   const allSpendingItems = [
-    ...games.map((g) => ({ price: g.price, currency: g.currency || 'CNY', purchaseDate: g.purchaseDate, type: 'game' })),
+    ...games.filter((g) => g.price != null).map((g) => ({ price: g.price!, currency: g.currency || 'CNY', purchaseDate: g.purchaseDate, type: 'game' })),
     ...ownedExpansions.filter((e) => e.price).map((e) => ({
       price: e.price!,
       currency: e.currency || 'CNY',
@@ -120,8 +120,8 @@ export default function Statistics() {
     .slice(0, 5);
 
   // Most expensive - per base game, total = base + exp + acc (all in CNY)
-  const mostExpensive = games.map((g) => {
-    const baseCny = toCNY(g.price, g.currency || 'CNY');
+  const mostExpensive = games.filter((g) => g.price != null).map((g) => {
+    const baseCny = toCNY(g.price!, g.currency || 'CNY');
     const related = ownedExpansions.filter((e) => e.baseGameId === g.id && e.price);
     const expCny = related
       .filter((e) => e.itemType !== 'accessory')
