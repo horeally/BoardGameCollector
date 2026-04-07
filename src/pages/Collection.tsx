@@ -122,7 +122,9 @@ export default function Collection() {
       setCostByGame(map);
     })();
   }, []);
-  const [sorter, setSorter] = useState<{ field?: string; order?: 'ascend' | 'descend' }>({});
+  const [sorter, setSorter] = useState<{ field?: string; order?: 'ascend' | 'descend' }>(() => {
+    try { return JSON.parse(localStorage.getItem('bgc-collection-sort') || '{}'); } catch { return {}; }
+  });
 
   // Linked versions: highlight + scroll
   const [highlightedId, setHighlightedId] = useState<string | null>(null);
@@ -523,6 +525,7 @@ export default function Collection() {
       width: 100,
       align: 'center' as const,
       sorter: (a: BoardGame, b: BoardGame) => (a.bggRank || 99999) - (b.bggRank || 99999),
+      sortOrder: sorter.field === 'bggRank' ? sorter.order : undefined,
       render: (v: number) => (v ? v : '-'),
     },
     {
@@ -538,6 +541,7 @@ export default function Collection() {
       key: 'name',
       align: 'center' as const,
       sorter: (a: BoardGame, b: BoardGame) => a.name.localeCompare(b.name),
+      sortOrder: sorter.field === 'name' ? sorter.order : undefined,
       onCell: (r: BoardGame) => ({
         className: r.kickstarter ? 'ks-name-cell' : '',
       }),
@@ -613,6 +617,7 @@ export default function Collection() {
         const bCost = toCNY(b.price || 0, b.currency) + (costByGame[b.id]?.exp || 0) + (costByGame[b.id]?.acc || 0);
         return aCost - bCost;
       },
+      sortOrder: sorter.field === 'price' ? sorter.order : undefined,
       render: (_: any, r: BoardGame) => {
         if (r.price == null) return '-';
         const costs = costByGame[r.id];
@@ -642,6 +647,7 @@ export default function Collection() {
       width: 85,
       align: 'center' as const,
       sorter: (a: BoardGame, b: BoardGame) => (a.rating || 0) - (b.rating || 0),
+      sortOrder: sorter.field === 'rating' ? sorter.order : undefined,
       render: (v: number) => (v ? `${v}/10` : '-'),
     },
     {
@@ -651,6 +657,7 @@ export default function Collection() {
       width: 85,
       align: 'center' as const,
       sorter: (a: BoardGame, b: BoardGame) => (a.bggRating || 0) - (b.bggRating || 0),
+      sortOrder: sorter.field === 'bggRating' ? sorter.order : undefined,
       render: (v: number) => (v ? v.toFixed(1) : '-'),
     },
     {
@@ -660,6 +667,7 @@ export default function Collection() {
       width: 80,
       align: 'center' as const,
       sorter: (a: BoardGame, b: BoardGame) => (a.weight || 0) - (b.weight || 0),
+      sortOrder: sorter.field === 'weight' ? sorter.order : undefined,
       render: (v: number) => (v ? v.toFixed(1) : '-'),
     },
     {
@@ -684,6 +692,7 @@ export default function Collection() {
       width: 120,
       align: 'center' as const,
       sorter: (a: BoardGame, b: BoardGame) => a.purchaseDate.localeCompare(b.purchaseDate),
+      sortOrder: sorter.field === 'purchaseDate' ? sorter.order : undefined,
     },
     {
       title: 'Actions',
@@ -892,7 +901,9 @@ export default function Collection() {
         pagination={{ pageSize, current: currentPage, onChange: (p) => setCurrentPage(p) }}
         onChange={(_pagination, _filters, s) => {
           const srt = Array.isArray(s) ? s[0] : s;
-          setSorter({ field: srt?.columnKey as string, order: srt?.order || undefined });
+          const newSorter = { field: srt?.columnKey as string, order: srt?.order || undefined };
+          setSorter(newSorter);
+          localStorage.setItem('bgc-collection-sort', JSON.stringify(newSorter));
         }}
         rowClassName={(r) => (r.id === highlightedId ? 'linked-highlight' : '')}
         expandable={{
