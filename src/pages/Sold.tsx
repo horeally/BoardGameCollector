@@ -1,5 +1,5 @@
-import { Button, Popconfirm, Spin, Table, Tag, Typography, message } from 'antd';
-import { UndoOutlined } from '@ant-design/icons';
+import { Button, Input, Popconfirm, Spin, Table, Tag, Typography, message } from 'antd';
+import { SearchOutlined, UndoOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { CURRENCY_SYMBOLS, toCNY } from '../types';
@@ -29,7 +29,14 @@ export default function Sold() {
   const { state, dispatch } = useGameStore();
   const [loading, setLoading] = useState(true);
 
-  const soldGames = state.games.filter((g) => g.sold);
+  const [search, setSearch] = useState('');
+
+  const soldGames = state.games.filter((g) => {
+    if (!g.sold) return false;
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return g.name.toLowerCase().includes(q) || g.nameEn?.toLowerCase().includes(q);
+  });
   const soldGameIds = soldGames.map((g) => g.id);
 
   // Fetch owned expansions/accessories for all sold games, split by item_type
@@ -270,6 +277,14 @@ export default function Sold() {
         </Col>
       </Row>
 
+      <Input
+        placeholder="Search sold games..."
+        prefix={<SearchOutlined />}
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+        style={{ width: 240, marginBottom: 16 }}
+        allowClear
+      />
       <Table
         dataSource={soldGames}
         columns={columns}
