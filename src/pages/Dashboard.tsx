@@ -218,7 +218,7 @@ export default function Dashboard() {
       <Row gutter={[16, 16]}>
         <Col xs={24} md={8}>
           <Card title="Category Distribution" style={{ height: '100%' }}>
-            <div className="scroll-hide" style={{ maxHeight: 350, overflowY: 'auto', overflowX: 'hidden' }}>
+            <div className="scroll-hide" style={{ maxHeight: 350 , overflowY: 'auto' }}>
               {categoryData.map((item) => (
                 <div key={item.name} style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
                   <span style={{ width: 130, flexShrink: 0, fontSize: 14 }}>{item.name}</span>
@@ -233,7 +233,7 @@ export default function Dashboard() {
         </Col>
         <Col xs={24} md={8}>
           <Card title="Price Distribution (CNY)" style={{ height: '100%' }}>
-            <div className="scroll-hide" style={{ maxHeight: 350, overflowY: 'auto', overflowX: 'hidden' }}>
+            <div className="scroll-hide" style={{ maxHeight: 350 , overflowY: 'auto' }}>
               {priceDistribution.map((item) => (
                 <div key={item.range} style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
                   <span style={{ width: 75, fontSize: 14 }}>{item.range}</span>
@@ -248,7 +248,7 @@ export default function Dashboard() {
         </Col>
         <Col xs={24} md={8}>
           <Card title="Monthly Spending" style={{ height: '100%' }}>
-            <div className="scroll-hide" style={{ maxHeight: 350, overflowY: 'auto', overflowX: 'hidden' }}>
+            <div className="scroll-hide" style={{ maxHeight: 350 , overflowY: 'auto' }}>
               {monthlyData.length === 0 ? (
                 <Empty description="No data" />
               ) : (
@@ -294,7 +294,7 @@ export default function Dashboard() {
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col xs={24} md={12}>
           <Card title="Most Expensive" style={{ height: '100%' }}>
-            <div className="scroll-hide" style={{ maxHeight: 500, overflowY: 'auto', overflowX: 'hidden' }}>
+            <div className="scroll-hide" style={{ maxHeight: 500, overflowY: 'auto' }}>
               {mostExpensive.map((item, i) => {
                 const parts = [
                   `base ¥${Math.round(item.baseCny)}`,
@@ -306,7 +306,7 @@ export default function Dashboard() {
                   <div key={`${item.name}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid #f5f5f5' }}>
                     <span style={{ width: 20, flexShrink: 0, fontSize: 13, color: '#999', textAlign: 'right' }}>{i + 1}</span>
                     {item.image ? (
-                      <img src={item.image} alt="" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} />
+                      <img src={item.image} alt="" loading="lazy" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} />
                     ) : (
                       <div style={{ width: 48, height: 48, background: '#f0f0f0', borderRadius: 6, flexShrink: 0 }} />
                     )}
@@ -325,7 +325,7 @@ export default function Dashboard() {
         </Col>
         <Col xs={24} md={12}>
           <Card title="Most Expansions" style={{ height: '100%' }}>
-            <div className="scroll-hide" style={{ maxHeight: 500, overflowY: 'auto', overflowX: 'hidden' }}>
+            <div className="scroll-hide" style={{ maxHeight: 500, overflowY: 'auto' }}>
               {mostExpansions.length === 0 ? (
                 <Empty description="No expansions owned" />
               ) : (
@@ -335,7 +335,7 @@ export default function Dashboard() {
                     <div key={`${item.name}-${i}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0', borderBottom: '1px solid #f5f5f5' }}>
                       <span style={{ width: 20, flexShrink: 0, fontSize: 13, color: '#999', textAlign: 'right' }}>{i + 1}</span>
                       {item.image ? (
-                        <img src={item.image} alt="" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} />
+                        <img src={item.image} alt="" loading="lazy" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} />
                       ) : (
                         <div style={{ width: 48, height: 48, background: '#f0f0f0', borderRadius: 6, flexShrink: 0 }} />
                       )}
