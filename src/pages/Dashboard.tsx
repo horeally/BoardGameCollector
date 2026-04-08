@@ -199,13 +199,13 @@ export default function Dashboard() {
 
       <Row gutter={16} style={{ marginBottom: 16 }}>
         <Col xs={24} sm={8}>
-          <Card bordered={false} style={{ height: '100%', borderRadius: 16, background: 'linear-gradient(to right, #1677ff 0%, #69b1ff 100%)' }} styles={{ body: { paddingTop: 12 } }}>
+          <Card variant="borderless" style={{ height: '100%', borderRadius: 16, background: 'linear-gradient(to right, #1677ff 0%, #69b1ff 100%)' }} styles={{ body: { paddingTop: 12 } }}>
             <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 20, fontWeight: 700, marginBottom: 12 }}>Total Games</div>
             <div style={{ color: '#fff', fontSize: 36, fontWeight: 700 }}>{totalGames}</div>
           </Card>
         </Col>
         <Col xs={24} sm={16}>
-          <Card bordered={false} style={{ height: '100%', borderRadius: 16, background: 'linear-gradient(to right, #1677ff 0%, #69b1ff 100%)' }} styles={{ body: { paddingTop: 12 } }}>
+          <Card variant="borderless" style={{ height: '100%', borderRadius: 16, background: 'linear-gradient(to right, #1677ff 0%, #69b1ff 100%)' }} styles={{ body: { paddingTop: 12 } }}>
             <div style={{ color: 'rgba(255,255,255,0.9)', fontSize: 20, fontWeight: 700, marginBottom: 12 }}>Total Spent</div>
             <div style={{ color: '#fff' }}>
               <CurrencyBreakdown totals={totalSpentByCurrency} />
