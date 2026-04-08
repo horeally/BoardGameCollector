@@ -3,12 +3,14 @@ body {
   padding: 0;
 }
 
-/* Hide scrollbars but keep scroll functionality */
+/* Hide scrollbars by default, show on hover */
 .scroll-hide {
-  scrollbar-width: none; /* Firefox */
+  scrollbar-width: none;
+  scrollbar-color: transparent transparent;
 }
-.scroll-hide::-webkit-scrollbar {
-  display: none; /* Chrome/Safari/Edge */
+.scroll-hide:hover {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0,0,0,0.2) transparent;
 }
 
 /* Hide button text on small screens */

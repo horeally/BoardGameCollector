@@ -218,7 +218,7 @@ export default function Dashboard() {
       <Row gutter={[16, 16]}>
         <Col xs={24} md={8}>
           <Card title="Category Distribution" style={{ height: '100%' }}>
-            <div className="scroll-hide" style={{ maxHeight: 350 , overflowY: 'auto' }}>
+            <div className="scroll-hide" style={{ maxHeight: 350, overflowY: 'auto' }}>
               {categoryData.map((item) => (
                 <div key={item.name} style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
                   <span style={{ width: 130, flexShrink: 0, fontSize: 14 }}>{item.name}</span>
@@ -233,7 +233,7 @@ export default function Dashboard() {
         </Col>
         <Col xs={24} md={8}>
           <Card title="Price Distribution (CNY)" style={{ height: '100%' }}>
-            <div className="scroll-hide" style={{ maxHeight: 350 , overflowY: 'auto' }}>
+            <div className="scroll-hide" style={{ maxHeight: 350, overflowY: 'auto' }}>
               {priceDistribution.map((item) => (
                 <div key={item.range} style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
                   <span style={{ width: 75, fontSize: 14 }}>{item.range}</span>
@@ -248,7 +248,7 @@ export default function Dashboard() {
         </Col>
         <Col xs={24} md={8}>
           <Card title="Monthly Spending" style={{ height: '100%' }}>
-            <div className="scroll-hide" style={{ maxHeight: 350 , overflowY: 'auto' }}>
+            <div className="scroll-hide" style={{ maxHeight: 350, overflowY: 'auto' }}>
               {monthlyData.length === 0 ? (
                 <Empty description="No data" />
               ) : (
@@ -289,7 +289,6 @@ export default function Dashboard() {
         </Col>
       </Row>
 
-      {/* Row 2: Most Expensive + Most Expansions */}
       {/* Row 2: Most Expensive + Most Expansions */}
       <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
         <Col xs={24} md={12}>
