@@ -3,6 +3,24 @@ body {
   padding: 0;
 }
 
+/* Hide scrollbars by default, show on hover */
+.scroll-hide {
+  scrollbar-width: none;
+}
+.scroll-hide::-webkit-scrollbar {
+  width: 0;
+}
+.scroll-hide:hover {
+  scrollbar-width: thin;
+}
+.scroll-hide:hover::-webkit-scrollbar {
+  width: 6px;
+}
+.scroll-hide:hover::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.15);
+  border-radius: 3px;
+}
+
 /* Hide button text on small screens */
 @media (max-width: 768px) {
   .btn-text {
