@@ -143,23 +143,24 @@ export default function Collection() {
   const [sellForm] = Form.useForm();
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 50;
-  const [costByGame, setCostByGame] = useState<Record<string, { exp: number; acc: number }>>({});
+  const [costByGame, setCostByGame] = useState<Record<string, { exp: number; acc: number; ownedExpCount: number }>>({});
 
-  // Fetch expansion/accessory costs for all games
+  // Fetch expansion/accessory costs and owned expansion counts
   useEffect(() => {
     (async () => {
       const { data } = await supabase
         .from('owned_expansions')
         .select('base_game_id, price, currency, item_type')
         .eq('owned', true);
-      const map: Record<string, { exp: number; acc: number }> = {};
+      const map: Record<string, { exp: number; acc: number; ownedExpCount: number }> = {};
       for (const r of data || []) {
         const cny = toCNY(Number(r.price) || 0, r.currency || 'CNY');
-        if (!map[r.base_game_id]) map[r.base_game_id] = { exp: 0, acc: 0 };
+        if (!map[r.base_game_id]) map[r.base_game_id] = { exp: 0, acc: 0, ownedExpCount: 0 };
         if (r.item_type === 'accessory') {
           map[r.base_game_id].acc += cny;
         } else {
           map[r.base_game_id].exp += cny;
+          map[r.base_game_id].ownedExpCount++;
         }
       }
       setCostByGame(map);
@@ -409,12 +410,12 @@ export default function Collection() {
         .from('owned_expansions')
         .select('base_game_id, price, currency, item_type')
         .eq('owned', true);
-      const map: Record<string, { exp: number; acc: number }> = {};
+      const map: Record<string, { exp: number; acc: number; ownedExpCount: number }> = {};
       for (const r of data || []) {
         const cny = toCNY(Number(r.price) || 0, r.currency || 'CNY');
-        if (!map[r.base_game_id]) map[r.base_game_id] = { exp: 0, acc: 0 };
+        if (!map[r.base_game_id]) map[r.base_game_id] = { exp: 0, acc: 0, ownedExpCount: 0 };
         if (r.item_type === 'accessory') map[r.base_game_id].acc += cny;
-        else map[r.base_game_id].exp += cny;
+        else { map[r.base_game_id].exp += cny; map[r.base_game_id].ownedExpCount++; }
       }
       setCostByGame(map);
     } catch { /* ignore */ }
@@ -595,11 +596,16 @@ export default function Collection() {
           <div>
             <div style={{ fontWeight: 500 }}>{r.name}</div>
             {r.nameEn && <div style={{ fontSize: 12, color: '#999' }}>{r.nameEn}</div>}
-            {r.gameType === 'base' && r.expansionBggIds && r.expansionBggIds.length > 0 && (
-              <div style={{ fontSize: 11, color: '#1677ff', marginTop: 2 }}>
-                {r.expansionBggIds.length} expansions
-              </div>
-            )}
+            {r.gameType === 'base' && r.expansionBggIds && r.expansionBggIds.length > 0 && (() => {
+              const owned = costByGame[r.id]?.ownedExpCount || 0;
+              const total = r.expansionBggIds.length;
+              const allOwned = owned >= total;
+              return (
+                <div style={{ fontSize: 11, color: allOwned ? '#52c41a' : '#1677ff', marginTop: 2 }}>
+                  {owned}/{total} expansions{allOwned && ' 🏅'}
+                </div>
+              );
+            })()}
             {linkedGames.length > 0 && (
               <LinkedTags games={linkedGames} onClickGame={(id) => scrollToGame(id)} />
             )}

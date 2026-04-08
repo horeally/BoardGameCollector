@@ -3,7 +3,6 @@ import { createBrowserRouter, RouterProvider, Link, Navigate, useLocation, Outle
 import { Button, ConfigProvider, Form, Input, Layout, Menu, Modal, Spin, message } from 'antd';
 import {
   AppstoreOutlined,
-  BarChartOutlined,
   DollarOutlined,
   ExportOutlined,
   LockOutlined,
@@ -20,7 +19,6 @@ import { supabase } from './utils/supabase';
 import Dashboard from './pages/Dashboard';
 import Collection from './pages/Collection';
 import AddGame from './pages/AddGame';
-import Statistics from './pages/Statistics';
 import Sold from './pages/Sold';
 import Login from './pages/Login';
 
@@ -34,7 +32,6 @@ function AppLayout() {
     { key: '/collection', icon: <PieChartOutlined />, label: <Link to="/collection">Collection</Link> },
     { key: '/add', icon: <PlusOutlined />, label: <Link to="/add">Add Game</Link> },
     { key: '/sold', icon: <DollarOutlined />, label: <Link to="/sold">Sold</Link> },
-    { key: '/statistics', icon: <BarChartOutlined />, label: <Link to="/statistics">Statistics</Link> },
   ];
 
   const selectedKey = menuItems.find((item) =>
@@ -67,7 +64,6 @@ const router = createBrowserRouter([
       { path: 'collection', element: <Collection /> },
       { path: 'add', element: <AddGame /> },
       { path: 'sold', element: <Sold /> },
-      { path: 'statistics', element: <Statistics /> },
       { path: '*', element: <Navigate to="/" /> },
     ],
   },
