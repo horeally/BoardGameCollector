@@ -17,6 +17,49 @@ import type { AccessoryInfo } from '../utils/bgg';
 
 const { Title } = Typography;
 
+const LINKED_SHOW_COUNT = 2;
+
+function LinkedTags({ games, onClickGame }: { games: BoardGame[]; onClickGame: (id: string) => void }) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? games : games.slice(0, LINKED_SHOW_COUNT);
+  const hiddenCount = games.length - LINKED_SHOW_COUNT;
+
+  return (
+    <div style={{ marginTop: 4 }}>
+      {visible.map((lg) => (
+        <Tag
+          key={lg.id}
+          icon={<LinkOutlined />}
+          color="cyan"
+          style={{ cursor: 'pointer', fontSize: 11, marginTop: 2 }}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClickGame(lg.id);
+          }}
+        >
+          {lg.name}{lg.yearPublished ? ` (${lg.yearPublished})` : ''}
+        </Tag>
+      ))}
+      {!expanded && hiddenCount > 0 && (
+        <Tag
+          style={{ cursor: 'pointer', fontSize: 11, marginTop: 2 }}
+          onClick={(e) => { e.stopPropagation(); setExpanded(true); }}
+        >
+          +{hiddenCount} more
+        </Tag>
+      )}
+      {expanded && hiddenCount > 0 && (
+        <Tag
+          style={{ cursor: 'pointer', fontSize: 11, marginTop: 2 }}
+          onClick={(e) => { e.stopPropagation(); setExpanded(false); }}
+        >
+          collapse
+        </Tag>
+      )}
+    </div>
+  );
+}
+
 function HoverImage({ url, size, side = 'right' }: { url?: string; size: number; side?: 'left' | 'right' }) {
   const [show, setShow] = useState(false);
   const [style, setStyle] = useState<React.CSSProperties>({});
@@ -558,22 +601,7 @@ export default function Collection() {
               </div>
             )}
             {linkedGames.length > 0 && (
-              <div style={{ marginTop: 4 }}>
-                {linkedGames.map((lg) => (
-                  <Tag
-                    key={lg.id}
-                    icon={<LinkOutlined />}
-                    color="cyan"
-                    style={{ cursor: 'pointer', fontSize: 11, marginTop: 2 }}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      scrollToGame(lg.id);
-                    }}
-                  >
-                    {lg.name}{lg.yearPublished ? ` (${lg.yearPublished})` : ''}
-                  </Tag>
-                ))}
-              </div>
+              <LinkedTags games={linkedGames} onClickGame={(id) => scrollToGame(id)} />
             )}
           </div>
         );
