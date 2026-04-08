@@ -167,7 +167,8 @@ export default function Dashboard() {
     { label: '200-500', min: 200, max: 500 },
     { label: '500-1000', min: 500, max: 1000 },
     { label: '1000-2000', min: 1000, max: 2000 },
-    { label: '2000+', min: 2000, max: Infinity },
+    { label: '2000-3000', min: 2000, max: 3000 },
+    { label: '3000+', min: 3000, max: Infinity },
   ];
   const priceDistribution = priceRanges.map((r) => ({
     range: r.label,
@@ -220,9 +221,9 @@ export default function Dashboard() {
           <Card title="Category Distribution" style={{ height: '100%' }}>
             <div className="scroll-hide" style={{ maxHeight: 350, overflowY: 'auto' }}>
               {categoryData.map((item) => (
-                <div key={item.name} style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
+                <div key={item.name} style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
                   <span style={{ width: 130, flexShrink: 0, fontSize: 14 }}>{item.name}</span>
-                  <div style={{ flex: 1, height: 20, background: '#f0f0f0', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{ flex: 1, height: 20, background: '#f0f0f0', borderRadius: 4, overflow: 'hidden', margin: '0 8px' }}>
                     <div style={{ width: `${(item.count / ownedGames.length) * 100}%`, height: '100%', background: '#1677ff', borderRadius: 4, minWidth: 20 }} />
                   </div>
                   <span style={{ width: 30, textAlign: 'right', fontSize: 14 }}>{item.count}</span>
@@ -232,12 +233,12 @@ export default function Dashboard() {
           </Card>
         </Col>
         <Col xs={24} md={8}>
-          <Card title="Price Distribution (CNY)" style={{ height: '100%' }}>
+          <Card title="Price Distribution" style={{ height: '100%' }}>
             <div className="scroll-hide" style={{ maxHeight: 350, overflowY: 'auto' }}>
               {priceDistribution.map((item) => (
-                <div key={item.range} style={{ display: 'flex', alignItems: 'center', marginBottom: 6 }}>
+                <div key={item.range} style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
                   <span style={{ width: 75, fontSize: 14 }}>{item.range}</span>
-                  <div style={{ flex: 1, height: 20, background: '#f0f0f0', borderRadius: 4, overflow: 'hidden' }}>
+                  <div style={{ flex: 1, height: 20, background: '#f0f0f0', borderRadius: 4, overflow: 'hidden', margin: '0 8px' }}>
                     <div style={{ width: `${allSpendingItems.length > 0 ? (item.count / allSpendingItems.length) * 100 : 0}%`, height: '100%', background: '#52c41a', borderRadius: 4, minWidth: item.count > 0 ? 20 : 0 }} />
                   </div>
                   <span style={{ width: 30, textAlign: 'right', fontSize: 14 }}>{item.count}</span>
