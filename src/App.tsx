@@ -1,8 +1,10 @@
-import { useEffect, useReducer, useState } from 'react';
+import { useEffect, useReducer, useRef, useState } from 'react';
 import { createBrowserRouter, RouterProvider, Link, Navigate, useLocation, Outlet } from 'react-router-dom';
 import { Button, ConfigProvider, Form, Input, Layout, Menu, Modal, Spin, message } from 'antd';
 import {
   AppstoreOutlined,
+  CaretDownOutlined,
+  CaretUpOutlined,
   DollarOutlined,
   ExportOutlined,
   LockOutlined,
@@ -71,9 +73,13 @@ const router = createBrowserRouter([
 
 export default function App() {
   const [state, dispatch] = useReducer(gameReducer, initialState);
+  const stateRef = useRef(state);
+  stateRef.current = state;
   const [authReady, setAuthReady] = useState(false);
   const [refreshingAll, setRefreshingAll] = useState(false);
   const [refreshProgress, setRefreshProgress] = useState({ current: 0, total: 0 });
+  const [rankChanges, setRankChanges] = useState<{ name: string; image?: string; oldRank: number | null; newRank: number | null }[]>([]);
+  const [rankModalOpen, setRankModalOpen] = useState(false);
 
   // Listen for auth state changes
   useEffect(() => {
@@ -114,18 +120,28 @@ export default function App() {
 
   const handleRefreshAll = async () => {
     const gamesWithBgg = state.games.filter((g) => !g.sold && g.bggId);
-    if (gamesWithBgg.length === 0) {
+    const gameIds = gamesWithBgg.map((g) => g.id);
+    if (gameIds.length === 0) {
       message.info('No games with BGG ID to refresh');
       return;
     }
+
+    // Snapshot old ranks before refresh
+    const oldRanks = new Map<string, { rank: number | null; name: string; image?: string }>();
+    for (const g of gamesWithBgg) {
+      oldRanks.set(g.id, { rank: g.bggRank ?? null, name: g.name, image: g.image });
+    }
+
     setRefreshingAll(true);
-    setRefreshProgress({ current: 0, total: gamesWithBgg.length });
+    setRefreshProgress({ current: 0, total: gameIds.length });
     let updated = 0;
-    for (let i = 0; i < gamesWithBgg.length; i++) {
-      const game = gamesWithBgg[i];
-      setRefreshProgress({ current: i + 1, total: gamesWithBgg.length });
+    for (let i = 0; i < gameIds.length; i++) {
+      // Read latest game from ref each iteration to avoid stale closure
+      const game = stateRef.current.games.find((g) => g.id === gameIds[i]);
+      if (!game || !game.bggId) continue;
+      setRefreshProgress({ current: i + 1, total: gameIds.length });
       try {
-        const detail = await getBGGDetail(game.bggId!);
+        const detail = await getBGGDetail(game.bggId);
         if (detail) {
           const updatedGame = {
             ...game,
@@ -144,7 +160,7 @@ export default function App() {
             expansionBggIds: detail.expansionIds?.length ? detail.expansionIds : game.expansionBggIds,
             accessoryBggIds: detail.accessoryIds?.length ? detail.accessoryIds : game.accessoryBggIds,
           };
-          await updateGame(updatedGame, state.userId!);
+          await updateGame(updatedGame, stateRef.current.userId!);
           dispatch({ type: 'UPDATE_GAME', payload: updatedGame });
           updated++;
         }
@@ -155,7 +171,31 @@ export default function App() {
     // Reload all data from DB to ensure consistency
     await loadUserGames();
     setRefreshingAll(false);
-    message.success(`Refreshed ${updated} / ${gamesWithBgg.length} games`);
+    message.success(`Refreshed ${updated} / ${gameIds.length} games`);
+
+    // Compare ranks and show changes
+    const changes: typeof rankChanges = [];
+    const freshGames = stateRef.current.games;
+    for (const [id, old] of oldRanks) {
+      const fresh = freshGames.find((g) => g.id === id);
+      if (!fresh) continue;
+      const newRank = fresh.bggRank ?? null;
+      const oldRank = old.rank;
+      if (oldRank === newRank) continue;
+      // Both null → no change; one null → show as change
+      if (oldRank == null && newRank == null) continue;
+      changes.push({ name: fresh.name, image: fresh.image, oldRank, newRank });
+    }
+    if (changes.length > 0) {
+      // Sort: biggest rank improvement first (oldRank - newRank descending)
+      changes.sort((a, b) => {
+        const da = (a.oldRank ?? 99999) - (a.newRank ?? 99999);
+        const db = (b.oldRank ?? 99999) - (b.newRank ?? 99999);
+        return db - da;
+      });
+      setRankChanges(changes);
+      setRankModalOpen(true);
+    }
   };
 
   const [pwModalOpen, setPwModalOpen] = useState(false);
@@ -193,14 +233,14 @@ export default function App() {
 
   if (!state.userId) {
     return (
-      <ConfigProvider theme={{ token: { colorPrimary: '#1677ff' } }}>
+      <ConfigProvider theme={{ token: { colorPrimary: '#0071e3' } }}>
         <Login onSuccess={loadUserGames} />
       </ConfigProvider>
     );
   }
 
   return (
-    <ConfigProvider theme={{ token: { colorPrimary: '#1677ff' } }}>
+    <ConfigProvider theme={{ token: { colorPrimary: '#0071e3' } }}>
       <GameContext.Provider value={{ state, dispatch }}>
         <div className="top-actions" style={{ position: 'fixed', top: 12, right: 12, zIndex: 1000, display: 'flex', gap: 6 }}>
           <Button icon={<ReloadOutlined />} size="small" loading={refreshingAll} onClick={handleRefreshAll}>
@@ -241,6 +281,101 @@ export default function App() {
               <Input.Password placeholder="Confirm new password" />
             </Form.Item>
           </Form>
+        </Modal>
+        <Modal
+          title={null}
+          open={rankModalOpen}
+          onCancel={() => setRankModalOpen(false)}
+          footer={null}
+          width={520}
+          centered
+          styles={{ body: { padding: 0 } }}
+        >
+          <div style={{ padding: '24px 24px 8px' }}>
+            <div style={{
+              fontSize: 21,
+              fontWeight: 600,
+              fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif',
+              letterSpacing: '0.011em',
+              color: '#1d1d1f',
+              lineHeight: 1.19,
+            }}>
+              Rank Changes
+            </div>
+            <div style={{
+              fontSize: 14,
+              fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif',
+              letterSpacing: '-0.224px',
+              color: 'rgba(0,0,0,0.48)',
+              marginTop: 4,
+            }}>
+              {rankChanges.length} game{rankChanges.length > 1 ? 's' : ''} with rank updates
+            </div>
+          </div>
+          <div className="scroll-hide" style={{ maxHeight: '50vh', overflowY: 'auto', padding: '8px 24px 24px' }}>
+            {rankChanges.map((item, i) => {
+              const oldR = item.oldRank;
+              const newR = item.newRank;
+              // Lower rank number = better; diff > 0 means improvement
+              const diff = oldR != null && newR != null ? oldR - newR : null;
+              const isUp = diff != null && diff > 0;
+              const isDown = diff != null && diff < 0;
+              const isNew = oldR == null && newR != null;
+              const isDropped = oldR != null && newR == null;
+              return (
+                <div key={i} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  padding: '10px 0',
+                  borderBottom: i < rankChanges.length - 1 ? '1px solid rgba(0,0,0,0.06)' : 'none',
+                }}>
+                  {item.image ? (
+                    <img src={item.image} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 8, flexShrink: 0 }} />
+                  ) : (
+                    <div style={{ width: 40, height: 40, background: '#f5f5f7', borderRadius: 8, flexShrink: 0 }} />
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{
+                      fontSize: 14,
+                      fontWeight: 400,
+                      fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif',
+                      letterSpacing: '-0.224px',
+                      color: '#1d1d1f',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}>{item.name}</div>
+                    <div style={{
+                      fontSize: 12,
+                      fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", sans-serif',
+                      letterSpacing: '-0.12px',
+                      color: 'rgba(0,0,0,0.48)',
+                      marginTop: 2,
+                    }}>
+                      #{oldR ?? '—'} → #{newR ?? '—'}
+                    </div>
+                  </div>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 4,
+                    flexShrink: 0,
+                    fontSize: 14,
+                    fontWeight: 600,
+                    fontFamily: '-apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", sans-serif',
+                    letterSpacing: '-0.224px',
+                    color: isUp || isNew ? '#34c759' : isDown || isDropped ? '#ff3b30' : 'rgba(0,0,0,0.48)',
+                  }}>
+                    {isUp && <><CaretUpOutlined />{diff}</>}
+                    {isDown && <><CaretDownOutlined />{Math.abs(diff!)}</>}
+                    {isNew && <>NEW</>}
+                    {isDropped && <>OUT</>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </Modal>
         <RouterProvider router={router} />
       </GameContext.Provider>

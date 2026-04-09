@@ -1,4 +1,4 @@
-import { Button, Input, Popconfirm, Spin, Table, Tag, Typography, message } from 'antd';
+import { Button, Col, Input, Popconfirm, Row, Spin, Table, message } from 'antd';
 import { SearchOutlined, UndoOutlined } from '@ant-design/icons';
 import { useEffect, useState } from 'react';
 import { useGameStore } from '../store/gameStore';
@@ -6,21 +6,50 @@ import { CURRENCY_SYMBOLS, toCNY } from '../types';
 import type { BoardGame, Currency } from '../types';
 import { updateGame } from '../utils/db';
 import { supabase } from '../utils/supabase';
-import StatCard from '../components/StatCard';
-import { Col, Row } from 'antd';
 
-const { Title } = Typography;
+const sfDisplay = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif';
+const sfText = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif';
 
 function CurrencyBreakdown({ totals }: { totals: Record<string, number> }) {
   const entries = Object.entries(totals).filter(([, v]) => v > 0);
-  if (entries.length === 0) return <div style={{ fontSize: 24, fontWeight: 500 }}>0</div>;
+  if (entries.length === 0) return <div style={{ fontSize: 28, fontWeight: 600, fontFamily: sfDisplay, color: '#fff' }}>0</div>;
   return (
     <div>
       {entries.map(([currency, amount]) => (
-        <div key={currency} style={{ fontSize: 20, fontWeight: 500, lineHeight: 1.4 }}>
+        <div key={currency} style={{
+          fontSize: 28,
+          fontWeight: 600,
+          fontFamily: sfDisplay,
+          lineHeight: 1.3,
+          letterSpacing: '-0.28px',
+          color: '#fff',
+        }}>
           {CURRENCY_SYMBOLS[currency as Currency] || ''}{Math.round(amount)}
+          <span style={{
+            fontSize: 12,
+            fontWeight: 400,
+            fontFamily: sfText,
+            color: 'rgba(255,255,255,0.48)',
+            marginLeft: 4,
+            letterSpacing: '-0.08px',
+          }}>{currency}</span>
         </div>
       ))}
+    </div>
+  );
+}
+
+function StatBlock({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div style={{
+        fontSize: 14,
+        fontFamily: sfText,
+        color: 'rgba(255,255,255,0.48)',
+        letterSpacing: '-0.224px',
+        marginBottom: 8,
+      }}>{label}</div>
+      {children}
     </div>
   );
 }
@@ -28,7 +57,6 @@ function CurrencyBreakdown({ totals }: { totals: Record<string, number> }) {
 export default function Sold() {
   const { state, dispatch } = useGameStore();
   const [loading, setLoading] = useState(true);
-
   const [search, setSearch] = useState('');
 
   const soldGames = state.games.filter((g) => {
@@ -39,7 +67,6 @@ export default function Sold() {
   });
   const soldGameIds = soldGames.map((g) => g.id);
 
-  // Fetch owned expansions/accessories for all sold games, split by item_type
   const [costByGame, setCostByGame] = useState<Record<string, { exp: number; acc: number; expByCurrency: Record<string, number>; accByCurrency: Record<string, number> }>>({});
 
   useEffect(() => {
@@ -124,12 +151,12 @@ export default function Sold() {
       title: 'Image',
       dataIndex: 'image',
       key: 'image',
-      width: 60,
+      width: 56,
       render: (url: string) =>
         url ? (
-          <img src={url} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4 }} />
+          <img src={url} alt="" style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 8 }} />
         ) : (
-          <div style={{ width: 40, height: 40, background: '#f0f0f0', borderRadius: 4 }} />
+          <div style={{ width: 40, height: 40, background: '#f5f5f7', borderRadius: 8 }} />
         ),
     },
     {
@@ -138,8 +165,20 @@ export default function Sold() {
       sorter: (a: BoardGame, b: BoardGame) => a.name.localeCompare(b.name),
       render: (_: any, r: BoardGame) => (
         <div>
-          <div style={{ fontWeight: 500 }}>{r.name}</div>
-          {r.nameEn && <div style={{ fontSize: 12, color: '#999' }}>{r.nameEn}</div>}
+          <div style={{
+            fontWeight: 400,
+            fontFamily: sfText,
+            fontSize: 14,
+            letterSpacing: '-0.224px',
+            color: '#1d1d1f',
+          }}>{r.name}</div>
+          {r.nameEn && <div style={{
+            fontSize: 12,
+            fontFamily: sfText,
+            letterSpacing: '-0.12px',
+            color: 'rgba(0,0,0,0.48)',
+            marginTop: 1,
+          }}>{r.nameEn}</div>}
         </div>
       ),
     },
@@ -157,9 +196,9 @@ export default function Sold() {
         const parts = [expCny > 0 ? `exp ¥${expCny}` : '', accCny > 0 ? `acc ¥${accCny}` : ''].filter(Boolean);
         return (
           <div>
-            <div>¥{total}</div>
+            <div style={{ fontFamily: sfText, fontSize: 14, fontWeight: 600, letterSpacing: '-0.224px', color: '#1d1d1f' }}>¥{total}</div>
             {hasExtra && (
-              <div style={{ fontSize: 11, color: '#999' }}>
+              <div style={{ fontSize: 11, fontFamily: sfText, letterSpacing: '-0.08px', color: 'rgba(0,0,0,0.48)' }}>
                 base ¥{baseCny} + {parts.join(' + ')}
               </div>
             )}
@@ -171,13 +210,16 @@ export default function Sold() {
       title: 'Sell Price',
       key: 'sellPrice',
       width: 110,
-      render: (_: any, r: BoardGame) =>
-        `${CURRENCY_SYMBOLS[(r.soldCurrency || r.currency) as Currency] || ''}${r.soldPrice || 0}`,
+      render: (_: any, r: BoardGame) => (
+        <span style={{ fontFamily: sfText, fontSize: 14, fontWeight: 600, letterSpacing: '-0.224px', color: '#1d1d1f' }}>
+          {CURRENCY_SYMBOLS[(r.soldCurrency || r.currency) as Currency] || ''}{r.soldPrice || 0}
+        </span>
+      ),
     },
     {
-      title: 'Profit/Loss (CNY)',
+      title: 'Profit/Loss',
       key: 'profit',
-      width: 140,
+      width: 120,
       sorter: (a: BoardGame, b: BoardGame) => {
         const da = toCNY(a.soldPrice || 0, a.soldCurrency || a.currency) - gameCostCny(a);
         const db = toCNY(b.soldPrice || 0, b.soldCurrency || b.currency) - gameCostCny(b);
@@ -187,10 +229,10 @@ export default function Sold() {
         const buyCny = gameCostCny(r);
         const sellCny = toCNY(r.soldPrice || 0, r.soldCurrency || r.currency);
         const diff = Math.round(sellCny - buyCny);
-        const color = diff > 0 ? '#52c41a' : diff < 0 ? '#ff4d4f' : '#999';
+        const color = diff > 0 ? '#34c759' : diff < 0 ? '#ff3b30' : 'rgba(0,0,0,0.48)';
         const prefix = diff > 0 ? '+' : '';
         return (
-          <span style={{ color, fontWeight: 600 }}>
+          <span style={{ color, fontWeight: 600, fontFamily: sfText, fontSize: 14, letterSpacing: '-0.224px' }}>
             {prefix}¥{diff}
           </span>
         );
@@ -201,12 +243,18 @@ export default function Sold() {
       dataIndex: 'purchaseDate',
       key: 'purchaseDate',
       width: 110,
+      render: (v: string) => (
+        <span style={{ fontFamily: sfText, fontSize: 13, letterSpacing: '-0.12px', color: 'rgba(0,0,0,0.48)' }}>{v}</span>
+      ),
     },
     {
       title: 'Sell Date',
       dataIndex: 'soldDate',
       key: 'soldDate',
       width: 110,
+      render: (v: string) => (
+        <span style={{ fontFamily: sfText, fontSize: 13, letterSpacing: '-0.12px', color: 'rgba(0,0,0,0.48)' }}>{v}</span>
+      ),
     },
     {
       title: 'Type',
@@ -214,10 +262,26 @@ export default function Sold() {
       key: 'gameType',
       width: 90,
       render: (v: string) => {
-        const conf = v === 'expansion' ? { color: 'orange', label: 'Expansion' }
-          : v === 'accessory' ? { color: 'purple', label: 'Accessory' }
-          : { color: 'blue', label: 'Base' };
-        return <Tag color={conf.color}>{conf.label}</Tag>;
+        const conf = v === 'expansion'
+          ? { bg: 'rgba(255, 149, 0, 0.12)', color: '#ff9500', label: 'Expansion' }
+          : v === 'accessory'
+          ? { bg: 'rgba(175, 82, 222, 0.12)', color: '#af52de', label: 'Accessory' }
+          : { bg: 'rgba(0, 113, 227, 0.12)', color: '#0071e3', label: 'Base' };
+        return (
+          <span style={{
+            display: 'inline-block',
+            padding: '2px 10px',
+            borderRadius: 980,
+            background: conf.bg,
+            color: conf.color,
+            fontSize: 12,
+            fontFamily: sfText,
+            fontWeight: 600,
+            letterSpacing: '-0.12px',
+          }}>
+            {conf.label}
+          </span>
+        );
       },
     },
     {
@@ -225,14 +289,17 @@ export default function Sold() {
       dataIndex: 'soldNotes',
       key: 'soldNotes',
       ellipsis: true,
+      render: (v: string) => (
+        <span style={{ fontFamily: sfText, fontSize: 13, letterSpacing: '-0.12px', color: 'rgba(0,0,0,0.48)' }}>{v}</span>
+      ),
     },
     {
-      title: 'Actions',
+      title: '',
       key: 'actions',
-      width: 80,
+      width: 48,
       render: (_: any, r: BoardGame) => (
         <Popconfirm title="Move back to collection?" onConfirm={() => handleUnsell(r)}>
-          <Button type="link" size="small" icon={<UndoOutlined />} />
+          <Button type="text" size="small" icon={<UndoOutlined />} style={{ color: 'rgba(0,0,0,0.32)' }} />
         </Popconfirm>
       ),
     },
@@ -247,51 +314,94 @@ export default function Sold() {
   }
 
   return (
-    <div>
-      <Title level={3}>Sold Games</Title>
+    <div style={{ fontFamily: sfText }}>
+      {/* Page Title */}
+      <h1 style={{
+        fontSize: 40,
+        fontWeight: 600,
+        fontFamily: sfDisplay,
+        lineHeight: 1.1,
+        letterSpacing: '-0.5px',
+        color: '#1d1d1f',
+        margin: '0 0 24px 0',
+      }}>
+        Sold Games
+      </h1>
 
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col xs={12} sm={6}>
-          <StatCard title="Games Sold" value={soldGames.length} />
-        </Col>
-        <Col xs={12} sm={6}>
-          <StatCard title="Total Bought">
-            <CurrencyBreakdown totals={boughtByCurrency} />
-          </StatCard>
-        </Col>
-        <Col xs={12} sm={6}>
-          <StatCard title="Total Sold">
-            <CurrencyBreakdown totals={soldByCurrency} />
-          </StatCard>
-        </Col>
-        <Col xs={12} sm={6}>
-          <StatCard title="Total Profit (CNY)">
-            <div style={{
-              fontSize: 24,
-              fontWeight: 500,
-              color: totalProfitRounded > 0 ? '#52c41a' : totalProfitRounded < 0 ? '#ff4d4f' : undefined,
-            }}>
-              {totalProfitRounded > 0 ? '+' : ''}¥{totalProfitRounded}
-            </div>
-          </StatCard>
-        </Col>
-      </Row>
+      {/* Hero Stats — Black immersive section */}
+      <div style={{
+        background: '#000',
+        borderRadius: 12,
+        padding: '28px 32px',
+        marginBottom: 24,
+      }}>
+        <Row gutter={[32, 20]}>
+          <Col xs={12} sm={6}>
+            <StatBlock label="Games Sold">
+              <div style={{
+                fontSize: 28,
+                fontWeight: 600,
+                fontFamily: sfDisplay,
+                lineHeight: 1.14,
+                letterSpacing: '-0.28px',
+                color: '#fff',
+              }}>{soldGames.length}</div>
+            </StatBlock>
+          </Col>
+          <Col xs={12} sm={6}>
+            <StatBlock label="Total Bought">
+              <CurrencyBreakdown totals={boughtByCurrency} />
+            </StatBlock>
+          </Col>
+          <Col xs={12} sm={6}>
+            <StatBlock label="Total Sold">
+              <CurrencyBreakdown totals={soldByCurrency} />
+            </StatBlock>
+          </Col>
+          <Col xs={12} sm={6}>
+            <StatBlock label="Profit (CNY)">
+              <div style={{
+                fontSize: 28,
+                fontWeight: 600,
+                fontFamily: sfDisplay,
+                lineHeight: 1.3,
+                letterSpacing: '-0.28px',
+                color: totalProfitRounded > 0 ? '#34c759' : totalProfitRounded < 0 ? '#ff3b30' : '#fff',
+              }}>
+                {totalProfitRounded > 0 ? '+' : ''}¥{totalProfitRounded}
+              </div>
+            </StatBlock>
+          </Col>
+        </Row>
+      </div>
 
+      {/* Search */}
       <Input
         placeholder="Search sold games..."
-        prefix={<SearchOutlined />}
+        prefix={<SearchOutlined style={{ color: 'rgba(0,0,0,0.32)' }} />}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        style={{ width: 240, marginBottom: 16 }}
+        style={{
+          width: 260,
+          marginBottom: 16,
+          borderRadius: 8,
+          fontFamily: sfText,
+          fontSize: 14,
+          letterSpacing: '-0.224px',
+        }}
         allowClear
       />
-      <Table
-        dataSource={soldGames}
-        columns={columns}
-        rowKey="id"
-        size="small"
-        pagination={{ pageSize: 50 }}
-      />
+
+      {/* Table */}
+      <div style={{ background: '#fff', borderRadius: 12, overflow: 'hidden' }}>
+        <Table
+          dataSource={soldGames}
+          columns={columns}
+          rowKey="id"
+          size="small"
+          pagination={{ pageSize: 50 }}
+        />
+      </div>
     </div>
   );
 }

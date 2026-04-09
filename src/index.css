@@ -1,16 +1,20 @@
 body {
   margin: 0;
   padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: #1d1d1f;
 }
 
-/* Hide scrollbars by default, show on hover */
+/* Scrollbar: always reserve space, only show track on hover */
 .scroll-hide {
-  scrollbar-width: none;
+  scrollbar-width: thin;
   scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.2s;
 }
 .scroll-hide:hover {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0,0,0,0.2) transparent;
+  scrollbar-color: rgba(0,0,0,0.15) transparent;
 }
 
 /* Hide button text on small screens */

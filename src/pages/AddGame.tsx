@@ -1,6 +1,6 @@
 import {
-  Button, Card, Checkbox, Col, DatePicker, Form, Input, InputNumber, List,
-  Row, Select, Space, Spin, Typography, message,
+  Button, Checkbox, Col, DatePicker, Form, Input, InputNumber, List,
+  Row, Select, Space, Spin, message,
 } from 'antd';
 import { CopyOutlined, NumberOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
 import { useEffect, useRef, useState } from 'react';
@@ -12,7 +12,8 @@ import { CATEGORIES } from '../types';
 import type { BGGSearchResult, BoardGame } from '../types';
 import { searchBGG, getBGGDetail } from '../utils/bgg';
 
-const { Title } = Typography;
+const sfDisplay = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif';
+const sfText = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif';
 
 export default function AddGame() {
   const { state, dispatch } = useGameStore();
@@ -20,6 +21,17 @@ export default function AddGame() {
   const [searchParams] = useSearchParams();
   const editId = searchParams.get('edit');
   const editGame = editId ? state.games.find((g) => g.id === editId) : null;
+
+  // Build return URL preserving Collection search/filter state
+  const returnUrl = (() => {
+    const p = new URLSearchParams();
+    const q = searchParams.get('q');
+    const cat = searchParams.get('cat');
+    if (q) p.set('q', q);
+    if (cat) p.set('cat', cat);
+    const qs = p.toString();
+    return '/collection' + (qs ? '?' + qs : '');
+  })();
 
   const [form] = Form.useForm();
   const [bggQuery, setBggQuery] = useState('');
@@ -221,25 +233,55 @@ export default function AddGame() {
         dispatch({ type: 'ADD_GAME', payload: game });
         message.success('Game added');
       }
-      navigate('/collection');
+      navigate(returnUrl);
     } catch {
       message.error('Failed to save game');
     }
   };
 
-  return (
-    <div style={{ maxWidth: 800 }}>
-      <Title level={3}>{editGame ? 'Edit Game' : 'Add Game'}</Title>
+  const sectionStyle: React.CSSProperties = {
+    background: '#fff',
+    borderRadius: 12,
+    padding: 24,
+    marginBottom: 16,
+  };
 
-      <Card size="small" style={{ marginBottom: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <Title level={5} style={{ margin: 0 }}>Search on BGG</Title>
+  const sectionTitleStyle: React.CSSProperties = {
+    fontSize: 21,
+    fontWeight: 600,
+    fontFamily: sfDisplay,
+    lineHeight: 1.19,
+    letterSpacing: '0.011em',
+    color: '#1d1d1f',
+    margin: '0 0 16px 0',
+  };
+
+  return (
+    <div style={{ maxWidth: 800, fontFamily: sfText }}>
+      {/* Page Title */}
+      <h1 style={{
+        fontSize: 40,
+        fontWeight: 600,
+        fontFamily: sfDisplay,
+        lineHeight: 1.1,
+        letterSpacing: '-0.5px',
+        color: '#1d1d1f',
+        margin: '0 0 24px 0',
+      }}>
+        {editGame ? 'Edit Game' : 'Add Game'}
+      </h1>
+
+      {/* BGG Search Section */}
+      <div style={sectionStyle}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <h2 style={sectionTitleStyle}>Search on BGG</h2>
           {editGame && (
             <Button
               icon={<ReloadOutlined />}
               size="small"
               loading={bggLoading}
               onClick={handleRefreshBGG}
+              style={{ borderRadius: 8 }}
             >
               Refresh BGG Data
             </Button>
@@ -248,232 +290,270 @@ export default function AddGame() {
         <Space.Compact style={{ width: '100%', marginBottom: 8 }}>
           <Input
             placeholder="Search BoardGameGeek..."
-            prefix={<SearchOutlined />}
+            prefix={<SearchOutlined style={{ color: 'rgba(0,0,0,0.32)' }} />}
             value={bggQuery}
             onChange={(e) => handleBGGSearch(e.target.value)}
             allowClear
-            style={{ flex: 1 }}
+            style={{ flex: 1, borderRadius: '8px 0 0 8px', fontFamily: sfText, fontSize: 14, letterSpacing: '-0.224px' }}
           />
         </Space.Compact>
         <Space.Compact style={{ width: '100%' }}>
           <Input
             placeholder="Or enter BGG ID (e.g. 12 for Ra)"
-            prefix={<NumberOutlined />}
+            prefix={<NumberOutlined style={{ color: 'rgba(0,0,0,0.32)' }} />}
             value={bggIdInput}
             onChange={(e) => setBggIdInput(e.target.value)}
             onPressEnter={handleBGGIdLoad}
-            style={{ flex: 1 }}
+            style={{ flex: 1, fontFamily: sfText, fontSize: 14, letterSpacing: '-0.224px' }}
           />
-          <Button onClick={handleBGGIdLoad} loading={bggLoading}>Load</Button>
+          <Button onClick={handleBGGIdLoad} loading={bggLoading} style={{ borderRadius: '0 8px 8px 0' }}>Load</Button>
         </Space.Compact>
         {bggLoading && <Spin style={{ marginTop: 8 }} />}
         {bggResults.length > 0 && (
           <List
             size="small"
-            style={{ maxHeight: 200, overflow: 'auto', marginTop: 8 }}
+            style={{ maxHeight: 200, overflow: 'auto', marginTop: 12, borderRadius: 8 }}
             dataSource={bggResults}
             renderItem={(item) => (
               <List.Item
-                style={{ cursor: 'pointer' }}
+                style={{
+                  cursor: 'pointer',
+                  fontFamily: sfText,
+                  fontSize: 14,
+                  letterSpacing: '-0.224px',
+                  color: '#1d1d1f',
+                  padding: '8px 12px',
+                  borderBottom: '1px solid rgba(0,0,0,0.06)',
+                }}
                 onClick={() => handleBGGSelect(item)}
               >
-                {item.name} {item.yearPublished && `(${item.yearPublished})`}
+                {item.name} {item.yearPublished && <span style={{ color: 'rgba(0,0,0,0.48)' }}>({item.yearPublished})</span>}
               </List.Item>
             )}
           />
         )}
-      </Card>
+      </div>
 
-      <Form
-        form={form}
-        layout="vertical"
-        onFinish={handleSubmit}
-        initialValues={{ currency: 'CNY', gameType: 'base' }}
-      >
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item
-              label={
-                <span>
-                  Name{' '}
-                  <Button
-                    type="link"
-                    size="small"
-                    icon={<CopyOutlined />}
-                    style={{ padding: 0, height: 'auto', fontSize: 12 }}
-                    onClick={() => {
-                      const en = form.getFieldValue('nameEn');
-                      if (en) {
-                        form.setFieldsValue({ name: en });
-                      } else {
-                        message.info('No English Name to copy');
-                      }
-                    }}
-                  >
-                    Copy English Name
-                  </Button>
-                </span>
-              }
-              name="name"
-              rules={[{ required: true, message: 'Required' }]}
+      {/* Game Form */}
+      <div style={sectionStyle}>
+        <Form
+          form={form}
+          layout="vertical"
+          onFinish={handleSubmit}
+          initialValues={{ currency: 'CNY', gameType: 'base' }}
+        >
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label={
+                  <span style={{ fontFamily: sfText, letterSpacing: '-0.224px' }}>
+                    Name{' '}
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<CopyOutlined />}
+                      style={{ padding: 0, height: 'auto', fontSize: 12, color: '#0071e3' }}
+                      onClick={() => {
+                        const en = form.getFieldValue('nameEn');
+                        if (en) {
+                          form.setFieldsValue({ name: en });
+                        } else {
+                          message.info('No English Name to copy');
+                        }
+                      }}
+                    >
+                      Copy English Name
+                    </Button>
+                  </span>
+                }
+                name="name"
+                rules={[{ required: true, message: 'Required' }]}
+              >
+                <Input style={{ borderRadius: 8 }} />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item name="nameEn" label="English Name">
+                <Input style={{ borderRadius: 8 }} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={6}>
+              <Form.Item name="price" label="Price">
+                <InputNumber style={{ width: '100%', borderRadius: 8 }} min={0} />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="currency" label="Currency">
+                <Select
+                  options={[
+                    { label: 'CNY ¥', value: 'CNY' },
+                    { label: 'USD $', value: 'USD' },
+                    { label: 'EUR €', value: 'EUR' },
+                    { label: 'GBP £', value: 'GBP' },
+                    { label: 'JPY ¥', value: 'JPY' },
+                    { label: 'SGD S$', value: 'SGD' },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="purchaseDate" label="Purchase Date">
+                <DatePicker style={{ width: '100%' }} />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="category" label="Category">
+                <Select options={CATEGORIES.map((c) => ({ label: c, value: c }))} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={6}>
+              <Form.Item name="gameType" label="Type">
+                <Select
+                  options={[
+                    { label: 'Base Game', value: 'base' },
+                    { label: 'Expansion', value: 'expansion' },
+                    { label: 'Accessory', value: 'accessory' },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="kickstarter" valuePropName="checked" label="Kickstarter">
+                <Checkbox>KS Edition</Checkbox>
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="players" label="Players">
+                <Input placeholder="e.g. 2-4" style={{ borderRadius: 8 }} />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="playTime" label="Play Time">
+                <Input placeholder="e.g. 60 min" style={{ borderRadius: 8 }} />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="yearPublished" label="Year Published">
+                <Input disabled style={{ borderRadius: 8 }} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={8}>
+              <Form.Item name="designer" label="Designer">
+                <Input disabled style={{ borderRadius: 8 }} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="artist" label="Artist">
+                <Input disabled style={{ borderRadius: 8 }} />
+              </Form.Item>
+            </Col>
+            <Col span={8}>
+              <Form.Item name="publisher" label="Publisher">
+                <Input disabled style={{ borderRadius: 8 }} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={6}>
+              <Form.Item name="rating" label="My Rating (1-10)">
+                <InputNumber style={{ width: '100%', borderRadius: 8 }} min={1} max={10} precision={0} />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="bggRating" label="BGG Avg Rating">
+                <InputNumber style={{ width: '100%', borderRadius: 8 }} min={0} max={10} step={0.1} disabled />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="bggBayesRating" label="BGG Bayes Rating">
+                <InputNumber style={{ width: '100%', borderRadius: 8 }} min={0} max={10} step={0.1} disabled />
+              </Form.Item>
+            </Col>
+            <Col span={6}>
+              <Form.Item name="bggRank" label="BGG Rank">
+                <InputNumber style={{ width: '100%', borderRadius: 8 }} min={0} disabled />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Row gutter={16}>
+            <Col span={6}>
+              <Form.Item name="weight" label="Weight (1-5)">
+                <InputNumber style={{ width: '100%', borderRadius: 8 }} min={0} max={5} step={0.1} disabled />
+              </Form.Item>
+            </Col>
+            <Col span={18}>
+              <Form.Item name="image" label="Image URL">
+                <Input placeholder="URL or leave empty" style={{ borderRadius: 8 }} />
+              </Form.Item>
+            </Col>
+          </Row>
+
+          <Form.Item name="relatedGames" label="Related Expansions / Base Game">
+            <Input.TextArea rows={2} disabled style={{ borderRadius: 8 }} />
+          </Form.Item>
+
+          <Form.Item name="bggId" hidden>
+            <Input />
+          </Form.Item>
+          <Form.Item name="expansionBggIds" hidden>
+            <Input />
+          </Form.Item>
+          <Form.Item name="accessoryBggIds" hidden>
+            <Input />
+          </Form.Item>
+
+          <Form.Item name="notes" label="Notes">
+            <Input.TextArea rows={3} style={{ borderRadius: 8 }} />
+          </Form.Item>
+
+          <Form.Item style={{ marginBottom: 0 }}>
+            <Button
+              type="primary"
+              htmlType="submit"
+              size="large"
+              style={{
+                borderRadius: 980,
+                padding: '8px 32px',
+                fontFamily: sfText,
+                fontSize: 17,
+                fontWeight: 400,
+                letterSpacing: '-0.374px',
+                height: 'auto',
+              }}
             >
-              <Input />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item name="nameEn" label="English Name">
-              <Input />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Row gutter={16}>
-          <Col span={6}>
-            <Form.Item name="price" label="Price">
-              <InputNumber style={{ width: '100%' }} min={0} />
-            </Form.Item>
-          </Col>
-          <Col span={6}>
-            <Form.Item name="currency" label="Currency">
-              <Select
-                options={[
-                  { label: 'CNY ¥', value: 'CNY' },
-                  { label: 'USD $', value: 'USD' },
-                  { label: 'EUR €', value: 'EUR' },
-                  { label: 'GBP £', value: 'GBP' },
-                  { label: 'JPY ¥', value: 'JPY' },
-                  { label: 'SGD S$', value: 'SGD' },
-                ]}
-              />
-            </Form.Item>
-          </Col>
-          <Col span={6}>
-            <Form.Item name="purchaseDate" label="Purchase Date">
-              <DatePicker style={{ width: '100%' }} />
-            </Form.Item>
-          </Col>
-          <Col span={6}>
-            <Form.Item name="category" label="Category">
-              <Select options={CATEGORIES.map((c) => ({ label: c, value: c }))} />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Row gutter={16}>
-          <Col span={6}>
-            <Form.Item name="gameType" label="Type">
-              <Select
-                options={[
-                  { label: 'Base Game', value: 'base' },
-                  { label: 'Expansion', value: 'expansion' },
-                  { label: 'Accessory', value: 'accessory' },
-                ]}
-              />
-            </Form.Item>
-          </Col>
-          <Col span={6}>
-            <Form.Item name="kickstarter" valuePropName="checked" label="Kickstarter">
-              <Checkbox>KS Edition</Checkbox>
-            </Form.Item>
-          </Col>
-          <Col span={6}>
-            <Form.Item name="players" label="Players">
-              <Input placeholder="e.g. 2-4" />
-            </Form.Item>
-          </Col>
-          <Col span={6}>
-            <Form.Item name="playTime" label="Play Time">
-              <Input placeholder="e.g. 60 min" />
-            </Form.Item>
-          </Col>
-          <Col span={6}>
-            <Form.Item name="yearPublished" label="Year Published">
-              <Input disabled />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Row gutter={16}>
-          <Col span={8}>
-            <Form.Item name="designer" label="Designer">
-              <Input disabled />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item name="artist" label="Artist">
-              <Input disabled />
-            </Form.Item>
-          </Col>
-          <Col span={8}>
-            <Form.Item name="publisher" label="Publisher">
-              <Input disabled />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Row gutter={16}>
-          <Col span={6}>
-            <Form.Item name="rating" label="My Rating (1-10)">
-              <InputNumber style={{ width: '100%' }} min={1} max={10} precision={0} />
-            </Form.Item>
-          </Col>
-          <Col span={6}>
-            <Form.Item name="bggRating" label="BGG Avg Rating">
-              <InputNumber style={{ width: '100%' }} min={0} max={10} step={0.1} disabled />
-            </Form.Item>
-          </Col>
-          <Col span={6}>
-            <Form.Item name="bggBayesRating" label="BGG Bayes Rating">
-              <InputNumber style={{ width: '100%' }} min={0} max={10} step={0.1} disabled />
-            </Form.Item>
-          </Col>
-          <Col span={6}>
-            <Form.Item name="bggRank" label="BGG Rank">
-              <InputNumber style={{ width: '100%' }} min={0} disabled />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Row gutter={16}>
-          <Col span={6}>
-            <Form.Item name="weight" label="Weight (1-5)">
-              <InputNumber style={{ width: '100%' }} min={0} max={5} step={0.1} disabled />
-            </Form.Item>
-          </Col>
-          <Col span={18}>
-            <Form.Item name="image" label="Image URL">
-              <Input placeholder="URL or leave empty" />
-            </Form.Item>
-          </Col>
-        </Row>
-
-        <Form.Item name="relatedGames" label="Related Expansions / Base Game">
-          <Input.TextArea rows={2} disabled />
-        </Form.Item>
-
-        <Form.Item name="bggId" hidden>
-          <Input />
-        </Form.Item>
-        <Form.Item name="expansionBggIds" hidden>
-          <Input />
-        </Form.Item>
-        <Form.Item name="accessoryBggIds" hidden>
-          <Input />
-        </Form.Item>
-
-        <Form.Item name="notes" label="Notes">
-          <Input.TextArea rows={3} />
-        </Form.Item>
-
-        <Form.Item>
-          <Button type="primary" htmlType="submit" size="large">
-            {editGame ? 'Update' : 'Add to Collection'}
-          </Button>
-          <Button style={{ marginLeft: 8 }} onClick={() => navigate('/collection')}>
-            Cancel
-          </Button>
-        </Form.Item>
-      </Form>
+              {editGame ? 'Update' : 'Add to Collection'}
+            </Button>
+            <Button
+              onClick={() => navigate('/collection')}
+              style={{
+                marginLeft: 12,
+                borderRadius: 980,
+                padding: '8px 24px',
+                fontFamily: sfText,
+                fontSize: 17,
+                fontWeight: 400,
+                letterSpacing: '-0.374px',
+                height: 'auto',
+                color: '#0071e3',
+                borderColor: '#0071e3',
+              }}
+            >
+              Cancel
+            </Button>
+          </Form.Item>
+        </Form>
+      </div>
     </div>
   );
 }

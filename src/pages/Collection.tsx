@@ -1,21 +1,58 @@
 import {
   Button, Checkbox, DatePicker, Form, Input, InputNumber, Modal, Popconfirm,
-  Select, Space, Spin, Table, Tag, Typography, message,
+  Select, Space, Spin, Table, message,
 } from 'antd';
 import { DeleteOutlined, DollarOutlined, EditOutlined, LinkOutlined, SearchOutlined } from '@ant-design/icons';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import dayjs from 'dayjs';
 import { useGameStore } from '../store/gameStore';
-import { CATEGORIES, CATEGORY_COLORS, CURRENCY_SYMBOLS, toCNY } from '../types';
+import { CATEGORIES, CURRENCY_SYMBOLS, toCNY } from '../types';
 import type { BoardGame, Currency, OwnedExpansion } from '../types';
 import { deleteGame, updateGame, updateLinkedGameIds, fetchExpansionsForGame, upsertExpansions, updateExpansionOwnership, insertAccessory, deleteAccessory, updateAccessoryOfficial, fetchExpansionTotalSpent, fetchExpansionSpentByCurrency } from '../utils/db';
 import { fetchExpansions, fetchAccessories } from '../utils/bgg';
 import { supabase } from '../utils/supabase';
 import type { AccessoryInfo } from '../utils/bgg';
 
-const { Title } = Typography;
+const sfDisplay = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif';
+const sfText = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif';
+
+// Apple-style pill badge
+const APPLE_TYPE_STYLES: Record<string, { bg: string; color: string }> = {
+  base: { bg: 'rgba(0, 113, 227, 0.12)', color: '#0071e3' },
+  expansion: { bg: 'rgba(255, 149, 0, 0.12)', color: '#ff9500' },
+  accessory: { bg: 'rgba(175, 82, 222, 0.12)', color: '#af52de' },
+};
+
+const APPLE_CATEGORY_STYLES: Record<string, { bg: string; color: string }> = {
+  'Abstract Games': { bg: 'rgba(175, 82, 222, 0.12)', color: '#af52de' },
+  'Customizable Games': { bg: 'rgba(0, 113, 227, 0.12)', color: '#0071e3' },
+  'Thematic Games': { bg: 'rgba(255, 45, 85, 0.12)', color: '#ff2d55' },
+  'Family Games': { bg: 'rgba(52, 199, 89, 0.12)', color: '#34c759' },
+  "Children's Games": { bg: 'rgba(162, 212, 50, 0.12)', color: '#7ab030' },
+  'Party Games': { bg: 'rgba(255, 149, 0, 0.12)', color: '#ff9500' },
+  'Strategy Games': { bg: 'rgba(0, 113, 227, 0.12)', color: '#0071e3' },
+  'Wargames': { bg: 'rgba(255, 59, 48, 0.12)', color: '#ff3b30' },
+};
+
+function ApplePill({ label, bg, color }: { label: string; bg: string; color: string }) {
+  return (
+    <span style={{
+      display: 'inline-block',
+      padding: '2px 10px',
+      borderRadius: 980,
+      background: bg,
+      color,
+      fontSize: 12,
+      fontFamily: sfText,
+      fontWeight: 600,
+      letterSpacing: '-0.12px',
+    }}>
+      {label}
+    </span>
+  );
+}
 
 const LINKED_SHOW_COUNT = 2;
 
@@ -24,37 +61,58 @@ function LinkedTags({ games, onClickGame }: { games: BoardGame[]; onClickGame: (
   const visible = expanded ? games : games.slice(0, LINKED_SHOW_COUNT);
   const hiddenCount = games.length - LINKED_SHOW_COUNT;
 
+  const pillStyle: React.CSSProperties = {
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: 3,
+    padding: '1px 8px',
+    borderRadius: 980,
+    background: 'rgba(90, 200, 250, 0.12)',
+    color: '#0a84ff',
+    fontSize: 11,
+    fontFamily: sfText,
+    fontWeight: 500,
+    letterSpacing: '-0.08px',
+    cursor: 'pointer',
+    marginTop: 3,
+    marginRight: 4,
+  };
+  const metaPillStyle: React.CSSProperties = {
+    ...pillStyle,
+    background: 'rgba(0, 0, 0, 0.05)',
+    color: 'rgba(0, 0, 0, 0.48)',
+  };
+
   return (
     <div style={{ marginTop: 4 }}>
       {visible.map((lg) => (
-        <Tag
+        <span
           key={lg.id}
-          icon={<LinkOutlined />}
-          color="cyan"
-          style={{ cursor: 'pointer', fontSize: 11, marginTop: 2 }}
+          style={pillStyle}
           onClick={(e) => {
             e.stopPropagation();
             onClickGame(lg.id);
           }}
         >
+          <LinkOutlined style={{ fontSize: 10 }} />
           {lg.name}{lg.yearPublished ? ` (${lg.yearPublished})` : ''}
-        </Tag>
+        </span>
       ))}
       {!expanded && hiddenCount > 0 && (
-        <Tag
-          style={{ cursor: 'pointer', fontSize: 11, marginTop: 2 }}
+        <span
+          style={metaPillStyle}
           onClick={(e) => { e.stopPropagation(); setExpanded(true); }}
         >
           +{hiddenCount} more
-        </Tag>
+        </span>
       )}
       {expanded && hiddenCount > 0 && (
-        <Tag
-          style={{ cursor: 'pointer', fontSize: 11, marginTop: 2 }}
+        <span
+          style={metaPillStyle}
           onClick={(e) => { e.stopPropagation(); setExpanded(false); }}
         >
           collapse
-        </Tag>
+        </span>
       )}
     </div>
   );
@@ -107,12 +165,12 @@ function HoverImage({ url, size, side = 'right' }: { url?: string; size: number;
   };
 
   if (!url) {
-    return <div style={{ width: size, height: size, background: '#f0f0f0', borderRadius: 4, margin: '0 auto' }} />;
+    return <div style={{ width: size, height: size, background: '#f5f5f7', borderRadius: 8, margin: '0 auto' }} />;
   }
 
   return (
     <div ref={imgRef} style={{ display: 'inline-block' }} onMouseEnter={onEnter} onMouseLeave={onLeave}>
-      <img src={url} alt="" style={{ width: size, height: size, objectFit: 'cover', borderRadius: 4 }} />
+      <img src={url} alt="" style={{ width: size, height: size, objectFit: 'cover', borderRadius: 8 }} />
       {show && createPortal(
         <div ref={popRef} style={{
           position: 'fixed',
@@ -120,12 +178,12 @@ function HoverImage({ url, size, side = 'right' }: { url?: string; size: number;
           opacity: 0,
           ...style,
           background: '#fff',
-          borderRadius: 8,
-          boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+          borderRadius: 12,
+          boxShadow: 'rgba(0, 0, 0, 0.22) 3px 5px 30px 0px',
           padding: 6,
           pointerEvents: 'none',
         }}>
-          <img src={url} alt="" style={{ display: 'block', borderRadius: 4, maxWidth: '40vw', maxHeight: '70vh' }} />
+          <img src={url} alt="" style={{ display: 'block', borderRadius: 8, maxWidth: '40vw', maxHeight: '70vh' }} />
         </div>,
         document.body,
       )}
@@ -136,8 +194,9 @@ function HoverImage({ url, size, side = 'right' }: { url?: string; size: number;
 export default function Collection() {
   const { state, dispatch } = useGameStore();
   const navigate = useNavigate();
-  const [search, setSearch] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState<string | undefined>();
+  const [urlParams] = useSearchParams();
+  const [search, setSearch] = useState(urlParams.get('q') || '');
+  const [categoryFilter, setCategoryFilter] = useState<string | undefined>(urlParams.get('cat') || undefined);
   const [sellModalOpen, setSellModalOpen] = useState(false);
   const [sellingGame, setSellingGame] = useState<BoardGame | null>(null);
   const [sellForm] = Form.useForm();
@@ -146,6 +205,7 @@ export default function Collection() {
   const [costByGame, setCostByGame] = useState<Record<string, { exp: number; acc: number; ownedExpCount: number }>>({});
 
   // Fetch expansion/accessory costs and owned expansion counts
+  // Re-fetch when games array changes (e.g. after BGG refresh updates expansionBggIds)
   useEffect(() => {
     (async () => {
       const { data } = await supabase
@@ -165,7 +225,7 @@ export default function Collection() {
       }
       setCostByGame(map);
     })();
-  }, []);
+  }, [state.games]);
   const [sorter, setSorter] = useState<{ field?: string; order?: 'ascend' | 'descend' }>(() => {
     try { return JSON.parse(localStorage.getItem('bgc-collection-sort') || '{}'); } catch { return {}; }
   });
@@ -594,15 +654,15 @@ export default function Collection() {
 
         return (
           <div>
-            <div style={{ fontWeight: 500 }}>{r.name}</div>
-            {r.nameEn && <div style={{ fontSize: 12, color: '#999' }}>{r.nameEn}</div>}
+            <div style={{ fontWeight: 400, fontFamily: sfText, fontSize: 14, letterSpacing: '-0.224px', color: '#1d1d1f' }}>{r.name}</div>
+            {r.nameEn && <div style={{ fontSize: 12, fontFamily: sfText, letterSpacing: '-0.12px', color: 'rgba(0,0,0,0.48)', marginTop: 1 }}>{r.nameEn}</div>}
             {r.gameType === 'base' && r.expansionBggIds && r.expansionBggIds.length > 0 && (() => {
               const owned = costByGame[r.id]?.ownedExpCount || 0;
               const total = r.expansionBggIds.length;
               const allOwned = owned >= total;
               return (
-                <div style={{ fontSize: 11, color: allOwned ? '#52c41a' : '#1677ff', marginTop: 2 }}>
-                  {owned}/{total} expansions{allOwned && ' 🏅'}
+                <div style={{ fontSize: 11, fontFamily: sfText, letterSpacing: '-0.08px', color: allOwned ? '#34c759' : '#0071e3', marginTop: 2 }}>
+                  {owned}/{total} expansions
                 </div>
               );
             })()}
@@ -620,10 +680,9 @@ export default function Collection() {
       width: 100,
       align: 'center' as const,
       render: (v: string) => {
-        const conf = v === 'expansion' ? { color: 'orange', label: 'Expansion' }
-          : v === 'accessory' ? { color: 'purple', label: 'Accessory' }
-          : { color: 'blue', label: 'Base' };
-        return <Tag color={conf.color}>{conf.label}</Tag>;
+        const label = v === 'expansion' ? 'Expansion' : v === 'accessory' ? 'Accessory' : 'Base';
+        const s = APPLE_TYPE_STYLES[v] || APPLE_TYPE_STYLES.base;
+        return <ApplePill label={label} bg={s.bg} color={s.color} />;
       },
     },
     {
@@ -632,7 +691,11 @@ export default function Collection() {
       key: 'category',
       width: 160,
       align: 'center' as const,
-      render: (v: string) => v ? <Tag color={CATEGORY_COLORS[v]}>{v}</Tag> : '-',
+      render: (v: string) => {
+        if (!v) return <span style={{ color: 'rgba(0,0,0,0.32)' }}>-</span>;
+        const s = APPLE_CATEGORY_STYLES[v] || { bg: 'rgba(0,0,0,0.06)', color: 'rgba(0,0,0,0.6)' };
+        return <ApplePill label={v} bg={s.bg} color={s.color} />;
+      },
     },
     {
       title: 'Players',
@@ -661,13 +724,13 @@ export default function Collection() {
         const baseCny = Math.round(toCNY(r.price || 0, r.currency));
         const total = baseCny + expCny + accCny;
         if (!hasExtra) {
-          return `${CURRENCY_SYMBOLS[r.currency as Currency] || ''}${r.price}`;
+          return <span style={{ fontFamily: sfText, fontSize: 14, fontWeight: 600, letterSpacing: '-0.224px', color: '#1d1d1f' }}>{CURRENCY_SYMBOLS[r.currency as Currency] || ''}{r.price}</span>;
         }
         const parts = [expCny > 0 ? `exp ¥${expCny}` : '', accCny > 0 ? `acc ¥${accCny}` : ''].filter(Boolean);
         return (
           <div>
-            <div>¥{total}</div>
-            <div style={{ fontSize: 11, color: '#999' }}>
+            <div style={{ fontFamily: sfText, fontSize: 14, fontWeight: 600, letterSpacing: '-0.224px', color: '#1d1d1f' }}>¥{total}</div>
+            <div style={{ fontSize: 11, fontFamily: sfText, letterSpacing: '-0.08px', color: 'rgba(0,0,0,0.48)' }}>
               base ¥{baseCny} + {parts.join(' + ')}
             </div>
           </div>
@@ -736,27 +799,34 @@ export default function Collection() {
       render: (_: any, r: BoardGame) => (
         <Space>
           <Button
-            type="link"
+            type="text"
             size="small"
             icon={<EditOutlined />}
-            onClick={() => navigate(`/add?edit=${r.id}`)}
+            style={{ color: 'rgba(0,0,0,0.32)' }}
+            onClick={() => {
+              const params = new URLSearchParams();
+              params.set('edit', r.id);
+              if (search) params.set('q', search);
+              if (categoryFilter) params.set('cat', categoryFilter);
+              navigate(`/add?${params.toString()}`);
+            }}
           />
           <Button
-            type="link"
+            type="text"
             size="small"
             icon={<LinkOutlined />}
-            style={{ color: '#13c2c2' }}
+            style={{ color: '#5ac8fa' }}
             onClick={() => openLinkModal(r)}
           />
           <Button
-            type="link"
+            type="text"
             size="small"
             icon={<DollarOutlined />}
-            style={{ color: '#52c41a' }}
+            style={{ color: '#34c759' }}
             onClick={() => openSellModal(r)}
           />
           <Popconfirm title="Delete this game?" onConfirm={() => handleDelete(r.id)}>
-            <Button type="link" size="small" danger icon={<DeleteOutlined />} />
+            <Button type="text" size="small" icon={<DeleteOutlined />} style={{ color: '#ff3b30' }} />
           </Popconfirm>
         </Space>
       ),
@@ -800,11 +870,12 @@ export default function Collection() {
       key: 'type',
       width: 100,
       align: 'center' as const,
-      render: (_: any, r: OwnedExpansion) => (
-        <Tag color={r.itemType === 'accessory' ? 'purple' : 'orange'}>
-          {r.itemType === 'accessory' ? 'Accessory' : 'Expansion'}
-        </Tag>
-      ),
+      render: (_: any, r: OwnedExpansion) => {
+        const type = r.itemType === 'accessory' ? 'accessory' : 'expansion';
+        const label = r.itemType === 'accessory' ? 'Accessory' : 'Expansion';
+        const s = APPLE_TYPE_STYLES[type];
+        return <ApplePill label={label} bg={s.bg} color={s.color} />;
+      },
     },
     {
       title: 'Official',
@@ -905,15 +976,25 @@ export default function Collection() {
   ];
 
   return (
-    <div>
-      <Title level={3}>My Collection</Title>
+    <div style={{ fontFamily: sfText }}>
+      <h1 style={{
+        fontSize: 40,
+        fontWeight: 600,
+        fontFamily: sfDisplay,
+        lineHeight: 1.1,
+        letterSpacing: '-0.5px',
+        color: '#1d1d1f',
+        margin: '0 0 24px 0',
+      }}>
+        My Collection
+      </h1>
       <Space style={{ marginBottom: 16 }} wrap>
         <Input
           placeholder="Search games..."
-          prefix={<SearchOutlined />}
+          prefix={<SearchOutlined style={{ color: 'rgba(0,0,0,0.32)' }} />}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          style={{ width: 240 }}
+          style={{ width: 240, borderRadius: 8, fontFamily: sfText, fontSize: 14, letterSpacing: '-0.224px' }}
           allowClear
         />
         <Select
@@ -924,8 +1005,9 @@ export default function Collection() {
           style={{ width: 200 }}
           options={CATEGORIES.map((c) => ({ label: c, value: c }))}
         />
-        <span style={{ color: '#999' }}>{filtered.length} games</span>
+        <span style={{ color: 'rgba(0,0,0,0.48)', fontFamily: sfText, fontSize: 14, letterSpacing: '-0.224px' }}>{filtered.length} games</span>
       </Space>
+      <div style={{ background: '#fff', borderRadius: 12, overflow: 'hidden' }}>
       <Table
         dataSource={filtered}
         columns={columns}
@@ -963,7 +1045,7 @@ export default function Collection() {
             return (
               <div style={{ paddingLeft: 16 }}>
                 {expansions.length > 0 && (
-                  <div style={{ marginBottom: 8, fontSize: 13, color: '#666' }}>
+                  <div style={{ marginBottom: 8, fontSize: 13, fontFamily: sfText, letterSpacing: '-0.12px', color: 'rgba(0,0,0,0.48)' }}>
                     {ownedCount} / {expansions.length} expansions owned
                   </div>
                 )}
@@ -979,7 +1061,7 @@ export default function Collection() {
                   />
                 )}
                 {(!exps || exps.length === 0) && (
-                  <div style={{ padding: '4px 0 8px', color: '#999', fontSize: 13 }}>No expansions or accessories yet</div>
+                  <div style={{ padding: '4px 0 8px', color: 'rgba(0,0,0,0.48)', fontFamily: sfText, fontSize: 13, letterSpacing: '-0.12px' }}>No expansions or accessories yet</div>
                 )}
                 <Button
                   type="dashed"
@@ -994,6 +1076,7 @@ export default function Collection() {
           },
         }}
       />
+      </div>
 
       <Modal
         title={`Sell: ${sellingGame?.name || ''}`}
@@ -1003,7 +1086,7 @@ export default function Collection() {
         okText="Confirm Sell"
       >
         {sellingGame && (
-          <div style={{ marginBottom: 16, color: '#999' }}>
+          <div style={{ marginBottom: 16, color: 'rgba(0,0,0,0.48)', fontFamily: sfText, fontSize: 14, letterSpacing: '-0.224px' }}>
             Bought for: {CURRENCY_SYMBOLS[sellingGame.currency as Currency] || ''}{sellingGame.price}
           </div>
         )}
@@ -1039,7 +1122,7 @@ export default function Collection() {
         onCancel={() => { setLinkModalOpen(false); setLinkingGame(null); }}
         okText="Save"
       >
-        <div style={{ marginBottom: 12, color: '#999', fontSize: 13 }}>
+        <div style={{ marginBottom: 12, color: 'rgba(0,0,0,0.48)', fontFamily: sfText, fontSize: 13, letterSpacing: '-0.12px' }}>
           Select games to link as related versions (e.g. different editions).
         </div>
         <Select
@@ -1087,17 +1170,17 @@ export default function Collection() {
             ) : bggAccessories.length > 0 ? (
               <div style={{ maxHeight: 300, overflow: 'auto' }}>
                 {bggAccessories.map((a) => (
-                  <div key={a.bggId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid #f0f0f0' }}>
+                  <div key={a.bggId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      {a.image ? <HoverImage url={a.image} size={32} side="left" /> : <div style={{ width: 32, height: 32, background: '#f0f0f0', borderRadius: 3 }} />}
-                      <span style={{ fontSize: 13 }}>{a.name}</span>
+                      {a.image ? <HoverImage url={a.image} size={32} side="left" /> : <div style={{ width: 32, height: 32, background: '#f5f5f7', borderRadius: 8 }} />}
+                      <span style={{ fontSize: 13, fontFamily: sfText, letterSpacing: '-0.12px', color: '#1d1d1f' }}>{a.name}</span>
                     </div>
                     <Button size="small" type="link" onClick={() => handleAddAccessoryFromBgg(a)}>Add</Button>
                   </div>
                 ))}
               </div>
             ) : (
-              <div style={{ color: '#999', fontSize: 13 }}>All BGG accessories already added</div>
+              <div style={{ color: 'rgba(0,0,0,0.48)', fontFamily: sfText, fontSize: 13, letterSpacing: '-0.12px' }}>All BGG accessories already added</div>
             )}
           </div>
         )}
@@ -1134,7 +1217,7 @@ export default function Collection() {
           animation: highlightFade 2s ease-out;
         }
         @keyframes highlightFade {
-          0% { background-color: #e6f7ff; }
+          0% { background-color: rgba(0, 113, 227, 0.08); }
           100% { background-color: transparent; }
         }
       `}</style>
