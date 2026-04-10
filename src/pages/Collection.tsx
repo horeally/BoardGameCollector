@@ -28,7 +28,7 @@ const APPLE_TYPE_STYLES: Record<string, { bg: string; color: string }> = {
 const APPLE_CATEGORY_STYLES: Record<string, { bg: string; color: string }> = {
   'Abstract Games': { bg: 'rgba(175, 82, 222, 0.12)', color: '#af52de' },
   'Customizable Games': { bg: 'rgba(0, 113, 227, 0.12)', color: '#0071e3' },
-  'Thematic Games': { bg: 'rgba(255, 45, 85, 0.12)', color: '#ff2d55' },
+  'Thematic Games': { bg: 'rgba(88, 86, 214, 0.12)', color: '#5856d6' },
   'Family Games': { bg: 'rgba(52, 199, 89, 0.12)', color: '#34c759' },
   "Children's Games": { bg: 'rgba(162, 212, 50, 0.12)', color: '#7ab030' },
   'Party Games': { bg: 'rgba(255, 149, 0, 0.12)', color: '#ff9500' },
