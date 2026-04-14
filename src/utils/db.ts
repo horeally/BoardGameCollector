@@ -1,6 +1,27 @@
 import { supabase } from './supabase';
 import type { BoardGame, OwnedExpansion } from '../types';
 
+// Supabase/PostgREST caps responses at 1000 rows (server-side max-rows).
+// This helper paginates to fetch all matching rows.
+export async function fetchAllOwnedExpansions(fields: string = '*'): Promise<any[]> {
+  const all: any[] = [];
+  const batch = 1000;
+  let from = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from('owned_expansions')
+      .select(fields)
+      .eq('owned', true)
+      .range(from, from + batch - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    all.push(...data);
+    if (data.length < batch) break;
+    from += batch;
+  }
+  return all;
+}
+
 // Convert DB row (snake_case) to app model (camelCase)
 function toGame(row: any): BoardGame {
   return {
@@ -190,26 +211,14 @@ export async function fetchExpansionsForGame(baseGameId: string): Promise<OwnedE
 }
 
 export async function fetchExpansionTotalSpent(): Promise<number> {
-  const { data, error } = await supabase
-    .from('owned_expansions')
-    .select('price')
-    .eq('owned', true)
-    .limit(10000);
-
-  if (error) throw error;
-  return (data || []).reduce((sum, row) => sum + (Number(row.price) || 0), 0);
+  const data = await fetchAllOwnedExpansions('price');
+  return data.reduce((sum, row) => sum + (Number(row.price) || 0), 0);
 }
 
 export async function fetchExpansionSpentByCurrency(): Promise<Record<string, number>> {
-  const { data, error } = await supabase
-    .from('owned_expansions')
-    .select('price, currency')
-    .eq('owned', true)
-    .limit(10000);
-
-  if (error) throw error;
+  const data = await fetchAllOwnedExpansions('price, currency');
   const map: Record<string, number> = {};
-  for (const row of data || []) {
+  for (const row of data) {
     const c = row.currency || 'CNY';
     const p = Number(row.price) || 0;
     if (p > 0) map[c] = (map[c] || 0) + p;

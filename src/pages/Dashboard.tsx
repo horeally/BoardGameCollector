@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 import { CURRENCY_SYMBOLS, toCNY } from '../types';
 import type { Currency, OwnedExpansion } from '../types';
-import { supabase } from '../utils/supabase';
+import { fetchAllOwnedExpansions } from '../utils/db';
 import dayjs from 'dayjs';
 
 // Apple font stacks
@@ -144,12 +144,8 @@ export default function Dashboard() {
 
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from('owned_expansions')
-        .select('*')
-        .eq('owned', true)
-        .limit(10000);
-      setOwnedExpansions((data || []).map((r: any) => ({
+      const data = await fetchAllOwnedExpansions('*');
+      setOwnedExpansions(data.map((r: any) => ({
         id: r.id,
         userId: r.user_id,
         baseGameId: r.base_game_id,

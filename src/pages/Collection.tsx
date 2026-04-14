@@ -10,7 +10,7 @@ import dayjs from 'dayjs';
 import { useGameStore } from '../store/gameStore';
 import { CATEGORIES, CURRENCY_SYMBOLS, toCNY } from '../types';
 import type { BoardGame, Currency, OwnedExpansion } from '../types';
-import { deleteGame, updateGame, updateLinkedGameIds, fetchExpansionsForGame, upsertExpansions, updateExpansionOwnership, insertAccessory, deleteAccessory, updateAccessoryOfficial, fetchExpansionTotalSpent, fetchExpansionSpentByCurrency } from '../utils/db';
+import { deleteGame, updateGame, updateLinkedGameIds, fetchExpansionsForGame, upsertExpansions, updateExpansionOwnership, insertAccessory, deleteAccessory, updateAccessoryOfficial, fetchExpansionTotalSpent, fetchExpansionSpentByCurrency, fetchAllOwnedExpansions } from '../utils/db';
 import { fetchExpansions, fetchAccessories } from '../utils/bgg';
 import { supabase } from '../utils/supabase';
 import type { AccessoryInfo } from '../utils/bgg';
@@ -210,15 +210,10 @@ export default function Collection() {
     if (!state.games.length) return;
     let stale = false;
     (async () => {
-      const { data, error } = await supabase
-        .from('owned_expansions')
-        .select('base_game_id, price, currency, item_type')
-        .eq('owned', true)
-        .limit(10000);
-      console.log('[costByGame] rows:', data?.length, 'error:', error);
+      const data = await fetchAllOwnedExpansions('base_game_id, price, currency, item_type');
       if (stale) return;
       const map: Record<string, { exp: number; acc: number; ownedExpCount: number }> = {};
-      for (const r of data || []) {
+      for (const r of data) {
         const cny = toCNY(Number(r.price) || 0, r.currency || 'CNY');
         if (!map[r.base_game_id]) map[r.base_game_id] = { exp: 0, acc: 0, ownedExpCount: 0 };
         if (r.item_type === 'accessory') {
@@ -226,12 +221,6 @@ export default function Collection() {
         } else {
           map[r.base_game_id].exp += cny;
           map[r.base_game_id].ownedExpCount++;
-        }
-      }
-      // Log games that have expansionBggIds but 0 owned count
-      for (const g of state.games) {
-        if (g.gameType === 'base' && g.expansionBggIds?.length && !map[g.id]?.ownedExpCount) {
-          console.log('[costByGame] ZERO:', g.name, g.id, 'entry:', map[g.id]);
         }
       }
       setCostByGame(map);
@@ -478,13 +467,9 @@ export default function Collection() {
       dispatch({ type: 'SET_EXPANSION_SPENT', payload: total });
       dispatch({ type: 'SET_EXPANSION_SPENT_BY_CURRENCY', payload: byCurrency });
       // Also refresh per-game costs
-      const { data } = await supabase
-        .from('owned_expansions')
-        .select('base_game_id, price, currency, item_type')
-        .eq('owned', true)
-        .limit(10000);
+      const data = await fetchAllOwnedExpansions('base_game_id, price, currency, item_type');
       const map: Record<string, { exp: number; acc: number; ownedExpCount: number }> = {};
-      for (const r of data || []) {
+      for (const r of data) {
         const cny = toCNY(Number(r.price) || 0, r.currency || 'CNY');
         if (!map[r.base_game_id]) map[r.base_game_id] = { exp: 0, acc: 0, ownedExpCount: 0 };
         if (r.item_type === 'accessory') map[r.base_game_id].acc += cny;
