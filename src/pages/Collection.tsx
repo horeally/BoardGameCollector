@@ -498,6 +498,20 @@ export default function Collection() {
           e.id === exp.id ? { ...e, owned, purchaseDate: date, currency } : e
         ),
       }));
+      // Optimistically update costByGame so the "n/n expansions" count refreshes immediately
+      const cny = toCNY(Number(exp.price) || 0, currency || 'CNY');
+      setCostByGame((prev) => {
+        const entry = prev[exp.baseGameId] || { exp: 0, acc: 0, ownedExpCount: 0 };
+        const isAcc = exp.itemType === 'accessory';
+        return {
+          ...prev,
+          [exp.baseGameId]: {
+            exp: entry.exp + (isAcc ? 0 : owned ? cny : -cny),
+            acc: entry.acc + (isAcc ? (owned ? cny : -cny) : 0),
+            ownedExpCount: entry.ownedExpCount + (isAcc ? 0 : owned ? 1 : -1),
+          },
+        };
+      });
       refreshExpansionSpent();
     } catch {
       message.error('Failed to update');
