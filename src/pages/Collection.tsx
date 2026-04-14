@@ -498,20 +498,6 @@ export default function Collection() {
           e.id === exp.id ? { ...e, owned, purchaseDate: date, currency } : e
         ),
       }));
-      // Optimistically update costByGame so the "n/n expansions" count refreshes immediately
-      const cny = toCNY(Number(exp.price) || 0, currency || 'CNY');
-      setCostByGame((prev) => {
-        const entry = prev[exp.baseGameId] || { exp: 0, acc: 0, ownedExpCount: 0 };
-        const isAcc = exp.itemType === 'accessory';
-        return {
-          ...prev,
-          [exp.baseGameId]: {
-            exp: entry.exp + (isAcc ? 0 : owned ? cny : -cny),
-            acc: entry.acc + (isAcc ? (owned ? cny : -cny) : 0),
-            ownedExpCount: entry.ownedExpCount + (isAcc ? 0 : owned ? 1 : -1),
-          },
-        };
-      });
       refreshExpansionSpent();
     } catch {
       message.error('Failed to update');
@@ -671,7 +657,11 @@ export default function Collection() {
             <div style={{ fontWeight: 400, fontFamily: sfText, fontSize: 14, letterSpacing: '-0.224px', color: '#1d1d1f' }}>{r.name}</div>
             {r.nameEn && <div style={{ fontSize: 12, fontFamily: sfText, letterSpacing: '-0.12px', color: 'rgba(0,0,0,0.48)', marginTop: 1 }}>{r.nameEn}</div>}
             {r.gameType === 'base' && r.expansionBggIds && r.expansionBggIds.length > 0 && (() => {
-              const owned = costByGame[r.id]?.ownedExpCount || 0;
+              // Prefer expansionMap (updated immediately on toggle) over costByGame (async, can be stale)
+              const exps = expansionMap[r.id];
+              const owned = exps
+                ? exps.filter((e) => e.itemType !== 'accessory' && e.owned).length
+                : (costByGame[r.id]?.ownedExpCount || 0);
               const total = r.expansionBggIds.length;
               const allOwned = owned >= total;
               return (
