@@ -207,11 +207,14 @@ export default function Collection() {
   // Fetch expansion/accessory costs and owned expansion counts
   // Re-fetch when games array changes (e.g. after BGG refresh updates expansionBggIds)
   useEffect(() => {
+    if (!state.games.length) return;
+    let stale = false;
     (async () => {
       const { data } = await supabase
         .from('owned_expansions')
         .select('base_game_id, price, currency, item_type')
         .eq('owned', true);
+      if (stale) return;
       const map: Record<string, { exp: number; acc: number; ownedExpCount: number }> = {};
       for (const r of data || []) {
         const cny = toCNY(Number(r.price) || 0, r.currency || 'CNY');
@@ -225,6 +228,7 @@ export default function Collection() {
       }
       setCostByGame(map);
     })();
+    return () => { stale = true; };
   }, [state.games]);
   const [sorter, setSorter] = useState<{ field?: string; order?: 'ascend' | 'descend' }>(() => {
     try { return JSON.parse(localStorage.getItem('bgc-collection-sort') || '{}'); } catch { return {}; }
