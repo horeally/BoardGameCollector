@@ -1036,7 +1036,7 @@ export default function Collection() {
             if (isLoading) {
               return (
                 <div style={{ textAlign: 'center', padding: 24 }}>
-                  <Spin tip="Loading expansions from BGG..." />
+                  <Spin description="Loading expansions from BGG..." />
                 </div>
               );
             }
