@@ -210,11 +210,12 @@ export default function Collection() {
     if (!state.games.length) return;
     let stale = false;
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('owned_expansions')
         .select('base_game_id, price, currency, item_type')
         .eq('owned', true)
         .limit(10000);
+      console.log('[costByGame] rows:', data?.length, 'error:', error);
       if (stale) return;
       const map: Record<string, { exp: number; acc: number; ownedExpCount: number }> = {};
       for (const r of data || []) {
@@ -225,6 +226,12 @@ export default function Collection() {
         } else {
           map[r.base_game_id].exp += cny;
           map[r.base_game_id].ownedExpCount++;
+        }
+      }
+      // Log games that have expansionBggIds but 0 owned count
+      for (const g of state.games) {
+        if (g.gameType === 'base' && g.expansionBggIds?.length && !map[g.id]?.ownedExpCount) {
+          console.log('[costByGame] ZERO:', g.name, g.id, 'entry:', map[g.id]);
         }
       }
       setCostByGame(map);
