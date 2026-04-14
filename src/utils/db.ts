@@ -193,7 +193,8 @@ export async function fetchExpansionTotalSpent(): Promise<number> {
   const { data, error } = await supabase
     .from('owned_expansions')
     .select('price')
-    .eq('owned', true);
+    .eq('owned', true)
+    .limit(10000);
 
   if (error) throw error;
   return (data || []).reduce((sum, row) => sum + (Number(row.price) || 0), 0);
@@ -203,7 +204,8 @@ export async function fetchExpansionSpentByCurrency(): Promise<Record<string, nu
   const { data, error } = await supabase
     .from('owned_expansions')
     .select('price, currency')
-    .eq('owned', true);
+    .eq('owned', true)
+    .limit(10000);
 
   if (error) throw error;
   const map: Record<string, number> = {};

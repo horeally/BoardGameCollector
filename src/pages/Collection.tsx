@@ -213,7 +213,8 @@ export default function Collection() {
       const { data } = await supabase
         .from('owned_expansions')
         .select('base_game_id, price, currency, item_type')
-        .eq('owned', true);
+        .eq('owned', true)
+        .limit(10000);
       if (stale) return;
       const map: Record<string, { exp: number; acc: number; ownedExpCount: number }> = {};
       for (const r of data || []) {
@@ -473,7 +474,8 @@ export default function Collection() {
       const { data } = await supabase
         .from('owned_expansions')
         .select('base_game_id, price, currency, item_type')
-        .eq('owned', true);
+        .eq('owned', true)
+        .limit(10000);
       const map: Record<string, { exp: number; acc: number; ownedExpCount: number }> = {};
       for (const r of data || []) {
         const cny = toCNY(Number(r.price) || 0, r.currency || 'CNY');

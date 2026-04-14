@@ -19,7 +19,8 @@ export default function Statistics() {
       const { data } = await supabase
         .from('owned_expansions')
         .select('*')
-        .eq('owned', true);
+        .eq('owned', true)
+        .limit(10000);
       setOwnedExpansions((data || []).map((r: any) => ({
         id: r.id,
         userId: r.user_id,
