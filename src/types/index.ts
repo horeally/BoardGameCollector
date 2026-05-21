@@ -96,7 +96,7 @@ export interface OwnedExpansion {
   yearPublished?: string;
 }
 
-export type Currency = 'CNY' | 'USD' | 'EUR' | 'GBP' | 'JPY' | 'SGD';
+export type Currency = 'CNY' | 'USD' | 'EUR' | 'GBP' | 'JPY' | 'SGD' | 'AUD';
 
 export const CURRENCY_SYMBOLS: Record<Currency, string> = {
   CNY: '¥',
@@ -105,6 +105,7 @@ export const CURRENCY_SYMBOLS: Record<Currency, string> = {
   GBP: '£',
   JPY: '¥',
   SGD: 'S$',
+  AUD: 'A$',
 };
 
 // Approximate exchange rates to CNY
@@ -115,6 +116,7 @@ export const EXCHANGE_RATES: Record<Currency, number> = {
   GBP: 9.1,
   JPY: 0.048,
   SGD: 5.4,
+  AUD: 4.7,
 };
 
 export function toCNY(price: number, currency: string): number {

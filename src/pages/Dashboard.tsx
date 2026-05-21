@@ -18,6 +18,7 @@ const CURRENCY_COLORS: Record<string, string> = {
   GBP: '#af52de',
   JPY: '#ff9500',
   SGD: '#5ac8fa',
+  AUD: '#ffcc00',
 };
 
 const CURRENCY_FLAGS: Record<string, string> = {
@@ -27,6 +28,7 @@ const CURRENCY_FLAGS: Record<string, string> = {
   GBP: 'https://flagcdn.com/gb.svg',
   JPY: 'https://flagcdn.com/jp.svg',
   SGD: 'https://flagcdn.com/sg.svg',
+  AUD: 'https://flagcdn.com/au.svg',
 };
 
 function groupByCurrency(items: { price: number; currency: string }[]): Record<string, number> {

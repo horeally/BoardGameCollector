@@ -920,6 +920,7 @@ export default function Collection() {
               { label: '€', value: 'EUR' },
               { label: '£', value: 'GBP' },
               { label: 'S$', value: 'SGD' },
+              { label: 'A$', value: 'AUD' },
             ]}
           />
         </Space>
@@ -1105,6 +1106,7 @@ export default function Collection() {
                 { label: 'GBP £', value: 'GBP' },
                 { label: 'JPY ¥', value: 'JPY' },
                 { label: 'SGD S$', value: 'SGD' },
+                { label: 'AUD A$', value: 'AUD' },
               ]}
             />
           </Form.Item>

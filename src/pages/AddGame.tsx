@@ -395,6 +395,7 @@ export default function AddGame() {
                     { label: 'GBP £', value: 'GBP' },
                     { label: 'JPY ¥', value: 'JPY' },
                     { label: 'SGD S$', value: 'SGD' },
+                    { label: 'AUD A$', value: 'AUD' },
                   ]}
                 />
               </Form.Item>
